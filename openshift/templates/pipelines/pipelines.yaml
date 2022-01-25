@@ -1,0 +1,60 @@
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: "${NAME}-template"
+  creationTimestamp: 
+objects:
+- kind: Pipeline
+  apiVersion: tekton.dev/v1beta1
+  metadata:    
+    name: promote-prod
+  spec:
+    tasks:
+      - name: tag-images
+        params:
+          - name: SCRIPT
+            value: |
+              oc tag whis-api:prod whis-api:prod-backup            
+              oc tag whis-ui:prod whis-ui:prod-backup              
+              oc tag whis-api:test whis-api:prod            
+              oc tag whis-ui:test whis-ui:prod              
+        taskRef:
+          kind: ClusterTask
+          name: openshift-client
+- kind: Pipeline
+  apiVersion: tekton.dev/v1beta1
+  metadata:
+    name: promote-test
+  spec:
+    tasks:
+      - name: tag-images
+        params:
+          - name: SCRIPT
+            value: |
+              oc tag whis-api:dev whis-api:test
+              oc tag whis-ui:dev whis-ui:test              
+        taskRef:
+          kind: ClusterTask
+          name: openshift-client        
+- kind: Pipeline
+  apiVersion: tekton.dev/v1beta1
+  metadata:
+    name: undo-last-prod-deployment    
+  spec:
+    tasks:
+      - name: tag-images
+        params:
+          - name: SCRIPT
+            value: |
+              oc tag whis-api:prod-backup whis-api:prod
+              oc tag whis-ui:prod-backup whis-ui:prod              
+        taskRef:
+          kind: ClusterTask
+          name: openshift-client
+parameters:
+- name: NAME
+  displayName: Name
+  description: The name assigned to all of the resources defined in this template.
+  required: true
+  value: pipeline
