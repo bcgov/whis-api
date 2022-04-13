@@ -1,10 +1,7 @@
-/whis-api/.env
-.vscode/settings.json
-/whis-api/build/**/*.map
-.idea/
 *.log
 *.swp
 *.zip
 *.tgz
 ~*
-
+node_modules
+build
