@@ -53,6 +53,6 @@
 		"dev": "ts-node-dev --respawn -- src/server.ts",
 		"build": "tsc",
 		"serve": "node build/server.js",
-		"migrate": "knex --env all migrate:latest"
+		"migrate": "knex --env all --debug migrate:latest"
 	}
 }

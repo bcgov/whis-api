@@ -16,7 +16,7 @@ module.exports = {
 		},
 		migrations: {
 			tableName: 'migration',
-			directory: './data/migrations',
+			directory: __dirname + '/data/migrations',
 			schemaName: 'knex'
 		}
 	}
