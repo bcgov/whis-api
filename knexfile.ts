@@ -1,5 +1,5 @@
 module.exports = {
-	development: {
+	all: {
 		client: 'pg',
 		searchPath: ['knex', 'public'],
 		connection: {
