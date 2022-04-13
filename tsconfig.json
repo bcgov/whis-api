@@ -1,0 +1,34 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noImplicitAny": false,
+		"importHelpers": true,
+		"outDir": "./build/",
+		"preserveConstEnums": true,
+		"removeComments": true,
+		"sourceMap": true,
+		"target": "es5",
+		"esModuleInterop": true,
+		"baseUrl": ".",
+		"lib": [
+			"es2015",
+			"es2016.array.include",
+			"es2017.object"
+		]
+	},
+	"exclude": [
+		//    "**/*.test.ts",
+		"build/*",
+		"public/*"
+	],
+	"include": [
+		"src/**/*.ts"
+	],
+	"paths": {
+		"@/*": [
+			"src/*"
+		]
+	}
+}
