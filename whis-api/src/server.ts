@@ -1,52 +1,43 @@
 import cors from 'cors';
 import http from 'http';
 import helmet from 'helmet';
-import express, { Request, Response } from 'express';
-import multer from 'multer';
-import * as api from './start';
-import listenForTelemetryAlerts from './database/notify';
-import { pgPool } from './database/pg';
+import express from 'express';
+import morgan from 'morgan';
+import {jwksMiddleware, JWTEnhancedRequest} from './jwt';
+import {DatabaseMiddleware, TransactionalRequest} from './database';
+import {CONFIG} from './config';
+import {common} from './apis/common';
 
-/*
-  Run the server.
-*/
-const upload = multer({ dest: 'whis-api/build/uploads' });
+const prefix = '/api/v1';
+const jwks = jwksMiddleware({jwksUri: CONFIG.JWKS_URL});
+const databaseMiddleware = DatabaseMiddleware();
 
-// only these urls can pass through unauthorized
-const unauthorizedURLs: Record<string, string> = {
-  status: '/get-onboard-status',
-  submit: '/submit-onboarding-request'
-};
+export interface WHISRequest extends JWTEnhancedRequest, TransactionalRequest {}
+
+process.on('SIGTERM', () => {
+	console.log('SIGTERM, exiting...');
+	process.exit();
+});
 
 const app = express()
-  .use(helmet())
-  .use(cors())
-  .use(express.urlencoded({ extended: true }))
-  .use(express.json())
-  .all('*', async (req: Request, res: Response, next) => {
-    // determine if user is authorized    
-      next(); // pass through    
-  })
-  // map
-  // Health check
-  .get('/health', (_, res) => res.send('healthy'))
-  .get('*', api.notFound);
+	.use(helmet())
+	.use(cors())
+	.use(morgan('combined'))
+	.use(express.json())
+	.use(databaseMiddleware.transactional())
+	.use(function (err, req, res, next) {
+		console.error(err.stack);
+		res.status(500).send({status: 'Error'});
+	})
 
-http.createServer(app).listen(3000, () => {
-  console.log(`listening on port 3000`);
-  pgPool.connect((err, client) => {
-    const server = `${process.env.POSTGRES_SERVER_HOST ?? 'localhost'}:${
-      process.env.POSTGRES_SERVER_PORT ?? 5432
-    }`;
-    if (err) {
-      console.log(
-        `error connecting to postgresql server host at ${server}: ${err}`
-      );
-    } else console.log(`postgres server successfully connected at ${server}`);
-    client?.release();
-  });
-  const disableAlerts = process.env.DISABLE_TELEMETRY_ALERTS;
-  if (!(disableAlerts === 'true')) {
-    listenForTelemetryAlerts();
-  }
+	.get('/health', common.healthCheck)
+
+	.get('*', common.notFound);
+
+app.options('*', cors());
+
+const server = http.createServer(app);
+
+server.listen(CONFIG.LISTEN_PORT, () => {
+	console.log(`listening on port ${CONFIG.LISTEN_PORT}`);
 });
