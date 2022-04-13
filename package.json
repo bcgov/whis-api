@@ -27,6 +27,7 @@
 		"helmet": "^5.0.2",
 		"jsonwebtoken": "^8.5.1",
 		"jwks-rsa": "^2.0.5",
+		"knex": "^1.0.6",
 		"moment": "^2.29.2",
 		"moment-timezone": "^0.5.34",
 		"morgan": "^1.10.0",
@@ -51,6 +52,7 @@
 		"lint": "eslint '*/**/*.{js,ts,tsx}'",
 		"dev": "ts-node-dev --respawn -- src/server.ts",
 		"build": "tsc",
-		"serve": "node build/server.js"
+		"serve": "node build/server.js",
+		"migrate": "knex migrate:latest"
 	}
 }
