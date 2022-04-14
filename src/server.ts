@@ -12,7 +12,8 @@ const prefix = '/api/v1';
 const jwks = jwksMiddleware({jwksUri: CONFIG.JWKS_URL});
 const databaseMiddleware = DatabaseMiddleware();
 
-export interface WHISRequest extends JWTEnhancedRequest, TransactionalRequest {}
+export interface WHISRequest extends JWTEnhancedRequest, TransactionalRequest {
+}
 
 process.on('SIGTERM', () => {
 	console.log('SIGTERM, exiting...');
@@ -22,7 +23,9 @@ process.on('SIGTERM', () => {
 const app = express()
 	.use(helmet())
 	.use(cors())
-	.use(morgan('combined'))
+	.use(morgan('tiny', {
+		skip: (req, res) => req.url === '/health'
+	}))
 	.use(express.json())
 	.use(databaseMiddleware.transactional())
 	.use(function (err, req, res, next) {
