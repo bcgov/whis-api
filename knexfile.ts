@@ -1,12 +1,16 @@
-module.exports = {
-	all: {
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+const config = {
+	development: {
 		client: 'pg',
-		searchPath: ['knex', 'public'],
+		searchPath: ['knex', 'whis'],
 		connection: {
 			host: process.env.DB_HOST,
-			port: process.env.DB_PORT || 5432,
-			database: process.env.DB_DATABASE || 'whis',
-			user: process.env.DB_USER || 'whis',
+			port: process.env.DB_PORT,
+			database: process.env.DB_DATABASE,
+			user: process.env.DB_USER,
 			password: process.env.DB_PASSWORD,
 			multipleStatements: true
 		},
@@ -17,7 +21,16 @@ module.exports = {
 		migrations: {
 			tableName: 'migration',
 			directory: __dirname + '/data/migrations',
-			schemaName: 'knex'
+			schemaName: 'knex',
+			extension: 'js'
+		},
+		seeds: {
+			tableName: 'seeds',
+			directory: __dirname + '/data/seeds',
+			schemaName: 'knex',
+			extension: 'js'
 		}
 	}
 };
+
+export default config;

@@ -1,43 +1,26 @@
-import cors from 'cors';
 import http from 'http';
-import helmet from 'helmet';
-import express from 'express';
-import morgan from 'morgan';
-import {jwksMiddleware, JWTEnhancedRequest} from './jwt';
-import {DatabaseMiddleware, TransactionalRequest} from './database';
 import {CONFIG} from './config';
-import {common} from './apis/common';
+import {buildApp} from './app';
+import pg from 'pg';
 
-const prefix = '/api/v1';
-const jwks = jwksMiddleware({jwksUri: CONFIG.JWKS_URL});
-const databaseMiddleware = DatabaseMiddleware();
-
-export interface WHISRequest extends JWTEnhancedRequest, TransactionalRequest {
-}
-
-process.on('SIGTERM', () => {
-	console.log('SIGTERM, exiting...');
-	process.exit();
+const pool = new pg.Pool({
+	user: CONFIG.DB_USER,
+	database: CONFIG.DB_NAME,
+	password: CONFIG.DB_PASSWORD,
+	host: CONFIG.DB_HOST,
+	port: CONFIG.DB_PORT,
+	max: 10
 });
 
-const app = express()
-	.use(helmet())
-	.use(cors())
-	.use(morgan('tiny', {
-		skip: (req, res) => req.url === '/health'
-	}))
-	.use(express.json())
-	.use(databaseMiddleware.transactional())
-	.use(function (err, req, res, next) {
-		console.error(err.stack);
-		res.status(500).send({status: 'Error'});
-	})
+pool.on('connect', client => {
+	client.query('SET search_path TO whis');
+});
 
-	.get('/health', common.healthCheck)
+pool.on('error', (err: Error): void => {
+	console.log(`postgresql error: ${err}`);
+});
 
-	.get('*', common.notFound);
-
-app.options('*', cors());
+const app = buildApp(pool);
 
 const server = http.createServer(app);
 

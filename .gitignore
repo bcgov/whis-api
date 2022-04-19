@@ -5,3 +5,8 @@
 ~*
 node_modules
 build
+.idea
+.eslintcache
+.env
+build/
+coverage/

@@ -1,12 +1,9 @@
-import {Request, Response} from 'express';
+import {Request, RequestHandler, Response} from 'express';
 
-const common = {
-	notFound: async (req: Request, res: Response): Promise<Response> => {
-		return res.status(404).send();
-	},
-	healthCheck: async (req: Request, res: Response): Promise<Response> => {
-		return res.status(200).send({status: 'ok'});
-	}
+export const NotFound: RequestHandler = async (req: Request, res: Response): Promise<Response> => {
+	return res.status(404).send();
 };
 
-export {common};
+export const HealthCheck: RequestHandler = async (req: Request, res: Response): Promise<Response> => {
+	return res.status(200).send({status: 'ok'});
+};

@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "Collecting and dispensing WHIS data",
 	"main": "start.js",
+	"type": "module",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/bcgov/whis-api/whis-api"
@@ -33,16 +34,17 @@
 		"morgan": "^1.10.0",
 		"pg": "^8.7.3",
 		"ts-node": "^10.7.0",
-		"ts-node-dev": "^1.1.8",
-		"tsc-watch": "^5.0.3",
 		"typescript": "^4.6.3",
 		"uuid": "^8.3.2"
 	},
 	"devDependencies": {
 		"@types/jest": "^27.0.0",
 		"eslint": "^8.13.0",
+		"husky": "^7.0.4",
 		"jest": "^27.5.1",
+		"lint-staged": "^12.3.8",
 		"prettier": "^2.6.2",
+		"supertest": "^6.2.2",
 		"ts-jest": "^27.1.4"
 	},
 	"scripts": {
@@ -53,6 +55,11 @@
 		"dev": "ts-node-dev --respawn -- src/server.ts",
 		"build": "tsc",
 		"serve": "node build/server.js",
-		"migrate": "knex --env all migrate:latest"
+		"migrate": "knex --env all migrate:latest",
+		"prepare": "husky install"
+	},
+	"lint-staged": {
+		"*.{js,ts}": "eslint --cache --fix",
+		"*.{js,ts,cjs,css,md}": "prettier --write"
 	}
 }

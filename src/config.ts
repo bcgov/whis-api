@@ -1,4 +1,7 @@
 // global configuration goes here
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const CONFIG = {
 	LISTEN_PORT: 6005,
@@ -6,11 +9,11 @@ const CONFIG = {
 	IS_PROD: process.env.NODE_ENV === 'production',
 	DEVELOPMENT_MODE: true,
 
-	DB_NAME: process.env.DB_NAME || 'whis',
-	DB_USER: process.env.DB_USER || 'whis',
-	DB_PASSWORD: process.env.DB_PASSWORD || 'development_only',
-	DB_HOST: process.env.DB_HOST || 'localhost',
-	DB_PORT: parseInt(process.env.DB_PORT) || 5432,
+	DB_NAME: process.env.DB_DATABASE,
+	DB_USER: process.env.DB_USER,
+	DB_PASSWORD: process.env.DB_PASSWORD,
+	DB_HOST: process.env.DB_HOST,
+	DB_PORT: parseInt(process.env.DB_PORT),
 
 	JWKS_URL: process.env.JWKS_URL || 'http://localhost:8888/auth/realms/whis/protocol/openid-connect/certs',
 

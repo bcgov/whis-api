@@ -37,52 +37,40 @@ const jwksMiddleware = (options: {jwksUri: string}) => {
 	}
 
 	return {
-		protect:
-			(protectionOptions?: {requireRole?: string | null; requireAnyRole?: string[] | null; requireOrganizationMapping: boolean}) =>
-				async (req: WHISRequest, response: Response, next: () => void) => {
-					const authHeader = req.header('Authorization');
+		protect: () => async (req: WHISRequest, response: Response, next: () => void) => {
+			const authHeader = req.header('Authorization');
 
-					if (!authHeader) {
-						response.status(401).send();
-					}
+			if (!authHeader) {
+				response.status(401).send();
+			}
 
-					const token = authHeader.split(/\s/)[1];
+			const token = authHeader.split(/\s/)[1];
 
-					if (!token) {
-						response.status(401).send();
-					}
+			if (!token) {
+				response.status(401).send();
+			}
 
-					const q = new Promise((resolve, reject) => {
-						jwt.verify(token, retrieveKey, {}, (err, decoded) => {
-							if (err) {
-								reject(err);
-							} else {
-								resolve(decoded);
-							}
-						});
-					});
+			try {
+				const decoded = await jwt.verify(token, retrieveKey);
 
-					try {
-						const decoded: any = await q;
+				req.jwtClaims = {
+					sub: decoded.sub,
+					name: decoded.name,
+					preferredUsername: decoded.preferred_username,
+					email: decoded.email
+				};
 
-						req.jwtClaims = {
-							sub: decoded.sub,
-							name: decoded.name,
-							preferredUsername: decoded.preferred_username,
-							email: decoded.email
-						};
+				const subject = decoded.sub;
 
-						const subject = decoded.sub;
-
-						req.whisContext = {
-							organization: await UserService.mapSubjectToOrganizationId(req.database.pool, subject),
-							subject: subject
-						};
-						next();
-					} catch (err) {
-						response.status(401).send();
-					}
-				}
+				req.whisContext = {
+					organization: await UserService.mapSubjectToOrganizationId(req.database.pool, subject),
+					subject: subject
+				};
+				next();
+			} catch (err) {
+				response.status(401).send();
+			}
+		}
 	};
 };
 export {jwksMiddleware, JWTEnhancedRequest};

@@ -1,30 +1,16 @@
-import pg, {QueryConfig} from 'pg';
-import {CONFIG} from './config';
+import {Pool, QueryConfig, QueryResult} from 'pg';
 import {Request, Response} from 'express';
-
-const pool = new pg.Pool({
-	user: CONFIG.DB_USER,
-	database: CONFIG.DB_NAME,
-	password: CONFIG.DB_PASSWORD,
-	host: CONFIG.DB_HOST,
-	port: CONFIG.DB_PORT,
-	max: 25
-});
-
-pool.on('error', (err: Error): void => {
-	console.log(`postgresql error: ${err}`);
-});
 
 interface TransactionalRequest extends Request {
 	database: {
-		pool: typeof pool;
-		query: (QueryConfig) => any;
+		pool: Pool;
+		query: (QueryConfig) => Promise<QueryResult<unknown>>;
 		rollback: () => void;
 	};
 }
 
-const DatabaseMiddleware = () => {
-	pool
+const DatabaseMiddleware = (databaseConnection: Pool) => {
+	databaseConnection
 		.connect()
 		.then(client => {
 			console.log('Database connection ok');
@@ -37,12 +23,12 @@ const DatabaseMiddleware = () => {
 
 	return {
 		transactional: () => async (req: TransactionalRequest, response: Response, next: () => void) => {
-			const client = await pool.connect();
+			const client = await databaseConnection.connect();
 			let shouldRollback = false;
 			await client.query('BEGIN TRANSACTION');
 
 			req.database = {
-				pool,
+				pool: databaseConnection,
 				rollback: () => {
 					shouldRollback = true;
 				},
@@ -72,4 +58,4 @@ const DatabaseMiddleware = () => {
 	};
 };
 
-export {DatabaseMiddleware, TransactionalRequest, pool as db};
+export {DatabaseMiddleware, TransactionalRequest};
