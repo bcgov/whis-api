@@ -2,7 +2,7 @@ import jwksRsa from 'jwks-rsa';
 import {Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import UserService from './services/user_service';
-import {WHISRequest} from './server';
+import {WHISRequest} from './app';
 
 interface JWTEnhancedRequest extends Request {
 	jwtClaims: {

@@ -52,9 +52,9 @@
 		"test": "jest",
 		"clear_test_cache": "jest --clearCache",
 		"lint": "eslint '*/**/*.{js,ts,tsx}'",
-		"dev": "ts-node-dev --respawn -- src/server.ts",
 		"build": "tsc",
-		"serve": "node build/server.js",
+		"dev": "node --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/server.ts",
+		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm  build/src/server.js",
 		"migrate": "knex --env all migrate:latest",
 		"prepare": "husky install"
 	},
