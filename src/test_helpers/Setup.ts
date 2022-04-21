@@ -1,4 +1,4 @@
-import {database, knexClientOptions, NecessaryMigrations, NecessarySeeds} from './constants';
+import {database, knexClientOptions, NecessaryMigrations, NecessarySeeds} from './Constants';
 import knexClient, {Knex} from 'knex';
 import Migration = Knex.Migration;
 import MigrationSource = Knex.MigrationSource;

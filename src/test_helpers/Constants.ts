@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 
 // this is really ugly but I cannot seem to get dynamic typescript imports working in globalSetup
 import * as migration_20220413082725_initial from '../../data/migrations/20220413082725_initial';
+import * as migration_20220421030358_code_tables from '../../data/migrations/20220421030358_code tables.js';
+import * as seed_initial_codes from '../../data/seeds/initial_codes.js';
+import * as seed_test_categories from '../../data/test_seeds/test_categories.js';
 
 dotenv.config();
 
@@ -32,6 +35,6 @@ export const createPool = () => {
 	return pool;
 };
 
-export const NecessaryMigrations = [migration_20220413082725_initial];
+export const NecessaryMigrations = [migration_20220413082725_initial, migration_20220421030358_code_tables];
 
-export const NecessarySeeds = [];
+export const NecessarySeeds = [seed_initial_codes, seed_test_categories];

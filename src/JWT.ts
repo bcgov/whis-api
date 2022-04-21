@@ -1,22 +1,8 @@
 import jwksRsa from 'jwks-rsa';
-import {Request, Response} from 'express';
+import {Response} from 'express';
 import jwt from 'jsonwebtoken';
-import UserService from './services/user_service';
-import {WHISRequest} from './app';
-
-interface JWTEnhancedRequest extends Request {
-	jwtClaims: {
-		sub: string | null;
-		name: string | null;
-		preferredUsername: string | null;
-		email: string | null;
-	};
-
-	whisContext: {
-		organization: number;
-		subject: string | null;
-	};
-}
+import UserService from './services/UserService';
+import {WHISRequest} from './App';
 
 const jwksMiddleware = (options: {jwksUri: string}) => {
 	const jwks = jwksRsa({
@@ -53,18 +39,14 @@ const jwksMiddleware = (options: {jwksUri: string}) => {
 			try {
 				const decoded = await jwt.verify(token, retrieveKey);
 
-				req.jwtClaims = {
-					sub: decoded.sub,
-					name: decoded.name,
-					preferredUsername: decoded.preferred_username,
-					email: decoded.email
-				};
-
 				const subject = decoded.sub;
 
 				req.whisContext = {
 					organization: await UserService.mapSubjectToOrganizationId(req.database.pool, subject),
-					subject: subject
+					subject: subject,
+					name: decoded.name,
+					preferredUsername: decoded.preferred_username,
+					email: decoded.email
 				};
 				next();
 			} catch (err) {
@@ -73,4 +55,4 @@ const jwksMiddleware = (options: {jwksUri: string}) => {
 		}
 	};
 };
-export {jwksMiddleware, JWTEnhancedRequest};
+export {jwksMiddleware};

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const CONFIG = {
+const Config = {
 	LISTEN_PORT: 6005,
 
 	IS_PROD: process.env.NODE_ENV === 'production',
@@ -29,4 +29,4 @@ const CONFIG = {
 	RABBIT_MQ_PASSWORD: process.env.RABBIT_MQ_PASSWORD || 'rabbitmq'
 };
 
-export {CONFIG};
+export {Config};

@@ -1,4 +1,4 @@
-import {database, knexClientOptions} from './constants';
+import {database, knexClientOptions} from './Constants';
 import Knex from 'knex';
 
 export default async () => {
