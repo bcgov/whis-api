@@ -22,13 +22,13 @@ const config = {
 			tableName: 'migration',
 			directory: __dirname + '/data/migrations',
 			schemaName: 'knex',
-			extension: 'js'
+			extension: 'cjs'
 		},
 		seeds: {
 			tableName: 'seeds',
 			directory: __dirname + '/data/seeds',
 			schemaName: 'knex',
-			extension: 'js'
+			extension: 'cjs'
 		}
 	}
 };

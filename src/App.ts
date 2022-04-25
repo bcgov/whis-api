@@ -9,12 +9,12 @@ import {Pool} from 'pg';
 import CodeTables from './apis/CodeTables';
 import {Config} from './Config';
 import {testSecurityMiddleware} from './test_helpers/TestSecurity';
+import HealthIDs from './apis/HealthIDs';
 
 const prefix = '/api/v1';
 
 export interface WHISRequest extends TransactionalRequest {
 	whisContext: {
-		organization: number | null;
 		subject: string | null;
 		preferredUsername: string | null;
 		email: string | null;
@@ -54,6 +54,8 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.use(express.json())
 		.use(databaseMiddleware.transactional())
 		.use(catchAllErrorHandler)
+
+		.get(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.List)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 		.get(`${prefix}/codes/:id`, securityMiddleware.protect(), CodeTables.Get)

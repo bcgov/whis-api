@@ -1,7 +1,6 @@
 import jwksRsa from 'jwks-rsa';
 import {Response} from 'express';
 import jwt from 'jsonwebtoken';
-import UserService from './services/UserService';
 import {WHISRequest} from './App';
 
 const jwksMiddleware = (options: {jwksUri: string}) => {
@@ -36,22 +35,22 @@ const jwksMiddleware = (options: {jwksUri: string}) => {
 				response.status(401).send();
 			}
 
-			try {
-				const decoded = await jwt.verify(token, retrieveKey);
+			jwt.verify(token, retrieveKey, {}, function (error, decoded) {
+				if (error) {
+					console.error(error);
+					response.status(401).send();
+				}
 
 				const subject = decoded.sub;
 
 				req.whisContext = {
-					organization: await UserService.mapSubjectToOrganizationId(req.database.pool, subject),
 					subject: subject,
 					name: decoded.name,
 					preferredUsername: decoded.preferred_username,
 					email: decoded.email
 				};
 				next();
-			} catch (err) {
-				response.status(401).send();
-			}
+			});
 		}
 	};
 };

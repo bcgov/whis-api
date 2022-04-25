@@ -33,7 +33,6 @@ const testSecurityMiddleware = () => {
 			}
 
 			req.whisContext = {
-				organization: null, //await UserService.mapSubjectToOrganizationId(req.database.pool, subject),
 				preferredUsername: user,
 				email: `${user}@whis.com`,
 				name: user,
