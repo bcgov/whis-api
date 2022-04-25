@@ -2,10 +2,10 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 
 // this is really ugly but I cannot seem to get dynamic typescript imports working in globalSetup
-import * as migration_20220413082725_initial from '../../data/migrations/20220413082725_initial';
-import * as migration_20220421030358_code_tables from '../../data/migrations/20220421030358_code tables.js';
-import * as seed_initial_codes from '../../data/seeds/initial_codes.js';
-import * as seed_test_categories from '../../data/test_seeds/test_categories.js';
+import * as migration_20220413082725_initial from '../../data/migrations/20220413082725_initial.cjs';
+import * as migration_20220421030358_code_tables from '../../data/migrations/20220421030358_code tables.cjs';
+import * as seed_initial_codes from '../../data/seeds/initial_codes.cjs';
+import * as seed_test_categories from '../../data/test_seeds/test_categories.cjs';
 
 dotenv.config();
 

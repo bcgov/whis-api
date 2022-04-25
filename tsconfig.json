@@ -31,8 +31,7 @@
 	"ts-node": {
 		"esm": true,
 		"moduleTypes": {
-			"jest.config.ts": "cjs",
-			"knexfile.ts": "cjs"
+			"jest.config.ts": "cjs"
 		}
 	}
 }

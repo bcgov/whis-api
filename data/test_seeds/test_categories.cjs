@@ -1,6 +1,6 @@
-import {SCHEMA} from '../migrations/20220413082725_initial.js';
+const {SCHEMA} = require('../migrations/20220413082725_initial.cjs');
 
-export async function seed(knex) {
+async function seed(knex) {
 	// to test the recursive structure of categories
 	await knex.raw(`
 
@@ -87,3 +87,7 @@ export async function seed(knex) {
 		        NULL); -- lasts until the end of time
 	`);
 }
+
+module.exports = {
+	seed
+};

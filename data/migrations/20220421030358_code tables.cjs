@@ -1,6 +1,6 @@
-import {SCHEMA} from './20220413082725_initial.js';
+const {SCHEMA} = require('./20220413082725_initial.cjs');
 
-export async function up(knex) {
+async function up(knex) {
 	await knex.raw(`
 
 		CREATE TABLE ${SCHEMA}.code_table
@@ -73,10 +73,16 @@ export async function up(knex) {
 `);
 }
 
-export async function down(knex) {
+async function down(knex) {
 	await knex.raw(`
+		DROP VIEW ${SCHEMA}.category_expanded;
 		DROP TABLE ${SCHEMA}.code;
 		DROP TABLE ${SCHEMA}.category;
 		DROP TABLE ${SCHEMA}.code_table;
 	`);
 }
+
+module.exports = {
+	down,
+	up
+};
