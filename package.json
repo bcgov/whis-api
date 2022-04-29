@@ -54,7 +54,7 @@
 		"lint": "eslint '*/**/*.{js,ts,tsx}'",
 		"build": "tsc",
 		"dev": "node --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
-		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm  build/src/server.js",
+		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
 		"migrate": "knex --esm migrate:latest",
 		"prepare": "husky install"
 	},
