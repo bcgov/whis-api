@@ -10,6 +10,7 @@ import CodeTables from './apis/CodeTables';
 import {Config} from './Config';
 import {testSecurityMiddleware} from './test_helpers/TestSecurity';
 import HealthIDs from './apis/HealthIDs';
+import User from './apis/User';
 
 const prefix = '/api/v1';
 
@@ -19,6 +20,7 @@ export interface WHISRequest extends TransactionalRequest {
 		preferredUsername: string | null;
 		email: string | null;
 		name: string | null;
+		roles: string[] | null;
 	};
 }
 
@@ -40,7 +42,7 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		securityMiddleware = testSecurityMiddleware();
 	} else {
 		// use real JWT parser/verifier
-		securityMiddleware = jwksMiddleware({jwksUri: Config.JWKS_URL});
+		securityMiddleware = jwksMiddleware(databaseConnection, {jwksUri: Config.JWKS_URL});
 	}
 
 	const app = express()
@@ -54,6 +56,10 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.use(express.json())
 		.use(databaseMiddleware.transactional())
 		.use(catchAllErrorHandler)
+
+		.get(`${prefix}/users/me`, securityMiddleware.protect(), User.Me)
+		.post(`${prefix}/users/access_request`, securityMiddleware.protect(), User.RequestAccess)
+		.get(`${prefix}/users/access_request`, securityMiddleware.protect(), User.GetAccessRequest)
 
 		.get(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.List)
 

@@ -36,7 +36,8 @@ const testSecurityMiddleware = () => {
 				preferredUsername: user,
 				email: `${user}@whis.com`,
 				name: user,
-				subject: user
+				subject: user,
+				roles: ['TestRole']
 			};
 
 			next();

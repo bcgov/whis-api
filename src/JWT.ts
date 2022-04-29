@@ -2,8 +2,10 @@ import jwksRsa from 'jwks-rsa';
 import {Response} from 'express';
 import jwt from 'jsonwebtoken';
 import {WHISRequest} from './App';
+import UserService from './services/UserService';
+import {Pool} from 'pg';
 
-const jwksMiddleware = (options: {jwksUri: string}) => {
+const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 	const jwks = jwksRsa({
 		jwksUri: options.jwksUri,
 		cacheMaxAge: 3600,
@@ -43,13 +45,16 @@ const jwksMiddleware = (options: {jwksUri: string}) => {
 
 				const subject = decoded.sub;
 
-				req.whisContext = {
-					subject: subject,
-					name: decoded.name,
-					preferredUsername: decoded.preferred_username,
-					email: decoded.email
-				};
-				next();
+				UserService.getRolesForUser(pool, decoded.email).then(roles => {
+					req.whisContext = {
+						subject: subject,
+						name: decoded.name,
+						preferredUsername: decoded.preferred_username,
+						email: decoded.email,
+						roles
+					};
+					next();
+				});
 			});
 		}
 	};
