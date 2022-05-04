@@ -43,17 +43,19 @@ const DatabaseMiddleware = (databaseConnection: Pool) => {
 				}
 			};
 
-			next();
-
-			try {
-				if (shouldRollback) {
-					await client.query('ROLLBACK');
-				} else {
-					await client.query('COMMIT');
+			response.on('finish', () => {
+				try {
+					if (shouldRollback) {
+						client.query('ROLLBACK');
+					} else {
+						client.query('COMMIT');
+					}
+				} finally {
+					client.release();
 				}
-			} finally {
-				client.release();
-			}
+			});
+
+			next();
 		}
 	};
 };

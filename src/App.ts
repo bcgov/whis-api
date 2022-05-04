@@ -26,7 +26,8 @@ export interface WHISRequest extends TransactionalRequest {
 
 function catchAllErrorHandler(err, req: Request, res: Response, next) {
 	console.error(err.stack);
-	res.status(500).send({error: 'An internal error has occurred.'});
+	res.status(500).json({error: 'An internal error has occurred.', detail: err.stack});
+	next();
 }
 
 export interface RuntimeConfig {
@@ -55,20 +56,27 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		)
 		.use(express.json())
 		.use(databaseMiddleware.transactional())
-		.use(catchAllErrorHandler)
 
 		.get(`${prefix}/users/me`, securityMiddleware.protect(), User.Me)
 		.post(`${prefix}/users/access_request`, securityMiddleware.protect(), User.RequestAccess)
 		.get(`${prefix}/users/access_request`, securityMiddleware.protect(), User.GetAccessRequest)
 
 		.get(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.List)
+		.post(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.Generate)
+
+		.get(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.TestLock)
+		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
+		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
+		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 		.get(`${prefix}/codes/:id`, securityMiddleware.protect(), CodeTables.Get)
 
 		.get('/health', HealthCheck)
-		.get('*', NotFound);
+		.get('*', NotFound)
 
-	app.options('*', cors());
+		.use(catchAllErrorHandler)
+
+		.options('*', cors());
 	return app;
 }
