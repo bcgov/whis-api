@@ -4,6 +4,7 @@ import Migration = Knex.Migration;
 import MigrationSource = Knex.MigrationSource;
 import SeedSource = Knex.SeedSource;
 import Seed = Knex.Seed;
+import {log} from '../util/Log';
 
 class CustomMigrationSource implements MigrationSource<string> {
 	async getMigrations() {
@@ -75,7 +76,7 @@ export default async () => {
 		await createTestDatabase();
 		await seedTestDatabase();
 	} catch (error) {
-		console.log(error);
+		log.error(error.toString());
 		process.exit(1);
 	}
 };

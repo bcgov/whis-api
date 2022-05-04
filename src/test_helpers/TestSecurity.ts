@@ -1,5 +1,6 @@
 import {Response} from 'express';
 import {WHISRequest} from '../App';
+import {log} from '../util/Log';
 
 const TEST_SECURITY_HEADER = 'X-Test-Authorization';
 
@@ -14,11 +15,11 @@ const testSecurityMiddleware = () => {
 
 			// don't spam if we're running in test
 			if (!('runningInTest' in global)) {
-				console.warn('THIS APP IS RUNNING INSECURE MIDDLEWARE DESIGNED FOR TESTING');
+				log.warn('THIS APP IS RUNNING INSECURE MIDDLEWARE DESIGNED FOR TESTING');
 			}
 
 			if (process.env.NODE_ENV === 'production') {
-				console.error("IT LOOKS LIKE YOU'RE RUNNING TEST SECURITY IN PRODUCTION MODE. BYE BYE.");
+				log.error("IT LOOKS LIKE YOU'RE RUNNING TEST SECURITY IN PRODUCTION MODE. BYE BYE.");
 				process.exit(-1);
 			}
 

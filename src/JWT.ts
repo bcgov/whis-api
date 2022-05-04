@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import {WHISRequest} from './App';
 import UserService from './services/UserService';
 import {Pool} from 'pg';
+import {log} from './util/Log';
 
 const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 	const jwks = jwksRsa({
@@ -39,7 +40,7 @@ const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 
 			jwt.verify(token, retrieveKey, {}, function (error, decoded) {
 				if (error) {
-					console.error(error);
+					log.error(error.toString());
 					response.status(401).send();
 				}
 

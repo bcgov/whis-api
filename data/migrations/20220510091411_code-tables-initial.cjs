@@ -1,8 +1,8 @@
-const {SCHEMA} = require('../migrations/20220413082725_initial.cjs');
+const {SCHEMA} = require('./20220413082725_initial.cjs');
 
-async function seed(knex) {
+async function up(knex) {
 	await knex.raw(`
-		DELETE
+DELETE
 		FROM ${SCHEMA}.code;
 
 		DELETE
@@ -67,11 +67,14 @@ async function seed(knex) {
 		INSERT INTO ${SCHEMA}.code(code_table_id, value, displayed_value, effective)
 		VALUES ((SELECT id FROM ${SCHEMA}.code_table WHERE name = 'animal_age'),
 		        'unclassified', 'Unclassified', CURRENT_DATE - INTERVAL '1 days');
-
-
 	`);
 }
 
+async function down(knex) {
+	throw new Error('this is a one way trip');
+}
+
 module.exports = {
-	seed
+	down,
+	up
 };

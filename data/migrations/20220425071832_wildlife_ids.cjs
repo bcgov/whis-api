@@ -40,7 +40,7 @@ async function up(knex) {
 		VALUES ('2022',
 		        '2022',
 		        '2022-01-1',
-		        '2022-12-12');
+		        '2022-12-31');
 
 		CREATE TABLE ${SCHEMA}.generation_record
 		(

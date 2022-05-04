@@ -11,6 +11,9 @@ import {Config} from './Config';
 import {testSecurityMiddleware} from './test_helpers/TestSecurity';
 import HealthIDs from './apis/HealthIDs';
 import User from './apis/User';
+import Years from './apis/Years';
+import {log} from './util/Log';
+import {IncomingMessage, ServerResponse} from 'http';
 
 const prefix = '/api/v1';
 
@@ -25,8 +28,9 @@ export interface WHISRequest extends TransactionalRequest {
 }
 
 function catchAllErrorHandler(err, req: Request, res: Response, next) {
-	console.error(err.stack);
-	res.status(500).send({error: 'An internal error has occurred.'});
+	log.error(err.toString());
+	res.status(500).json({error: 'An internal error has occurred.', detail: err.stack});
+	next();
 }
 
 export interface RuntimeConfig {
@@ -50,25 +54,37 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.use(cors())
 		.use(
 			morgan('tiny', {
+				stream: {
+					write: msg => log.info(msg, {service: 'http'})
+				},
 				skip: (req, res) => req.url === '/health'
 			})
 		)
 		.use(express.json())
 		.use(databaseMiddleware.transactional())
-		.use(catchAllErrorHandler)
 
 		.get(`${prefix}/users/me`, securityMiddleware.protect(), User.Me)
 		.post(`${prefix}/users/access_request`, securityMiddleware.protect(), User.RequestAccess)
 		.get(`${prefix}/users/access_request`, securityMiddleware.protect(), User.GetAccessRequest)
 
 		.get(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.List)
+		.post(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.Generate)
+
+		.get(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.TestLock)
+		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
+		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
+		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
-		.get(`${prefix}/codes/:id`, securityMiddleware.protect(), CodeTables.Get)
+		.get(`${prefix}/codes/:name`, securityMiddleware.protect(), CodeTables.Get)
+
+		.get(`${prefix}/years`, securityMiddleware.protect(), Years.List)
 
 		.get('/health', HealthCheck)
-		.get('*', NotFound);
+		.get('*', NotFound)
 
-	app.options('*', cors());
+		.use(catchAllErrorHandler)
+
+		.options('*', cors());
 	return app;
 }

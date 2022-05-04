@@ -1,7 +1,7 @@
 import {Pool} from 'pg';
 
-async function getRolesForUser(pool: Pool, email: string): Promise<string[]> {
-	const queryResult = await pool.query({
+async function getRolesForUser(db, email: string): Promise<string[]> {
+	const queryResult = await db.query({
 		text: `select array_agg(r.name) as roles
 					 from role r
 									inner join role_mapping rm on r.id = rm.role_id
@@ -19,8 +19,8 @@ async function getRolesForUser(pool: Pool, email: string): Promise<string[]> {
 	return [];
 }
 
-async function getAccessRequest(pool: Pool, email: string): Promise<any> {
-	const queryResult = await pool.query({
+async function getAccessRequest(db, email: string): Promise<any> {
+	const queryResult = await db.query({
 		text: `select *
 					 from access_request
 					 where email = $1`,
@@ -34,17 +34,14 @@ async function getAccessRequest(pool: Pool, email: string): Promise<any> {
 	return queryResult.rows[0];
 }
 
-async function createAccessRequest(pool: Pool, email: string, reason?: string | null): Promise<any> {
-	const queryResult = await pool.query({
+async function createAccessRequest(db, email: string, reason?: string | null): Promise<void> {
+	const queryResult = await db.query({
 		text: `insert into access_request(email, reason)
 					 values ($1, $2) on conflict (email)
 					 do
 		update set update_time = current_timestamp`,
 		values: [email, reason]
 	});
-
-	console.dir(queryResult);
-	return null;
 }
 
 const UserService = {

@@ -5,5 +5,5 @@ export const NotFound: RequestHandler = async (req: Request, res: Response): Pro
 };
 
 export const HealthCheck: RequestHandler = async (req: Request, res: Response): Promise<Response> => {
-	return res.status(200).send({status: 'ok'});
+	return res.status(200).json({status: 'ok'});
 };

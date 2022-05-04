@@ -1,5 +1,6 @@
 import {Pool, QueryConfig, QueryResult} from 'pg';
 import {Request, Response} from 'express';
+import {log} from './util/Log';
 
 interface TransactionalRequest extends Request {
 	database: {
@@ -13,11 +14,11 @@ const DatabaseMiddleware = (databaseConnection: Pool) => {
 	databaseConnection
 		.connect()
 		.then(client => {
-			console.log('Database connection ok');
+			log.debug('Database connection ok');
 			client.release();
 		})
 		.catch(err => {
-			console.error(`database connection error: ${err}`);
+			log.error(`database connection error: ${err}`);
 			throw err;
 		});
 
@@ -36,24 +37,28 @@ const DatabaseMiddleware = (databaseConnection: Pool) => {
 					try {
 						return await client.query(queryConfig);
 					} catch (err) {
-						console.log(`Error in database query: ${err}, scheduling rollback`);
+						log.error(`Error in database query: ${err}, scheduling rollback`);
 						shouldRollback = true;
 						throw err;
 					}
 				}
 			};
 
-			next();
-
-			try {
-				if (shouldRollback) {
-					await client.query('ROLLBACK');
-				} else {
-					await client.query('COMMIT');
+			response.on('finish', () => {
+				try {
+					if (shouldRollback) {
+						log.info('rollback');
+						client.query('ROLLBACK');
+					} else {
+						log.debug('commit');
+						client.query('COMMIT');
+					}
+				} finally {
+					client.release();
 				}
-			} finally {
-				client.release();
-			}
+			});
+
+			next();
 		}
 	};
 };
