@@ -10,6 +10,7 @@ import * as migration_20220504013431_locking from '../../data/migrations/2022050
 import * as migration_20220504120123_sequence_trigger from '../../data/migrations/20220504120123_sequence-trigger.cjs';
 import * as migration_20220510091411_code_tables_initial from '../../data/migrations/20220510091411_code-tables-initial.cjs';
 import * as migration_20220510091705_adjustments_to_id_schema from '../../data/migrations/20220510091705_adjustments-to-id-schema.cjs';
+import * as migration_20220510102606_fixup_missing_sequence from '../../data/migrations/20220510102606_fixup-missing-sequence.cjs';
 import * as seed_test_categories from '../../data/test_seeds/test_categories.cjs';
 
 dotenv.config();
@@ -48,7 +49,8 @@ export const NecessaryMigrations = [
 	migration_20220504013431_locking,
 	migration_20220504120123_sequence_trigger,
 	migration_20220510091411_code_tables_initial,
-	migration_20220510091705_adjustments_to_id_schema
+	migration_20220510091705_adjustments_to_id_schema,
+	migration_20220510102606_fixup_missing_sequence
 ];
 
 export const NecessarySeeds = [seed_test_categories];

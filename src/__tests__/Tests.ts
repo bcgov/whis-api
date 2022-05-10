@@ -4,7 +4,6 @@ import {buildApp} from '../App';
 import setup from '../test_helpers/Setup';
 import teardown from '../test_helpers/Teardown';
 import {generateTestSecurityHeader, TEST_SECURITY_HEADER} from '../test_helpers/TestSecurity';
-import {log} from '../util/Log';
 
 describe('API Tests', () => {
 	let database;
