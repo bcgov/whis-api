@@ -4,6 +4,7 @@ import {buildApp} from '../App';
 import setup from '../test_helpers/Setup';
 import teardown from '../test_helpers/Teardown';
 import {generateTestSecurityHeader, TEST_SECURITY_HEADER} from '../test_helpers/TestSecurity';
+import {log} from '../util/Log';
 
 describe('API Tests', () => {
 	let database;
@@ -15,6 +16,7 @@ describe('API Tests', () => {
 		await setup();
 
 		database = createPool();
+
 		app = buildApp(database, {useTestSecurity: true});
 		global['runningInTest'] = true;
 
@@ -24,6 +26,11 @@ describe('API Tests', () => {
 	});
 
 	afterAll(async () => {
+		// there's a race condition somewhere waiting for connections to get released
+		await new Promise(resolve => {
+			setTimeout(resolve, 1000);
+		});
+
 		await database.end();
 		await teardown();
 	});

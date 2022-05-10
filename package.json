@@ -50,7 +50,7 @@
 	},
 	"scripts": {
 		"check-types": "tsc",
-		"test": "jest",
+		"test": "jest --runInBand --verbose --no-cache",
 		"clear_test_cache": "jest --clearCache",
 		"lint": "eslint '*/**/*.{js,ts,tsx}'",
 		"build": "tsc",
