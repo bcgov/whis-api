@@ -10,3 +10,7 @@ build
 .env
 build/
 coverage/
+
+# not for public consumption
+.dockerignore
+Dockerfile
