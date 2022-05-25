@@ -51,6 +51,16 @@ const List: RequestHandler = async (req: WHISRequest, res: Response, next): Prom
 	}
 };
 
+const Detail: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	try {
+		const queryResult = await HealthIDsService.getId(req.database, req.params['id']);
+
+		return res.status(200).json(queryResult);
+	} catch (err) {
+		next(err);
+	}
+};
+
 const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {
 		await HealthIDsService.generateIDs(req.database, req.whisContext.email, req.body);
@@ -63,6 +73,7 @@ const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): 
 
 export default {
 	List,
+	Detail,
 	Generate,
 	TestLock,
 	AcquireLock,

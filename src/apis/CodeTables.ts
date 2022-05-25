@@ -4,7 +4,14 @@ import CodeTablesService from '../services/CodeTablesService';
 
 const List: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {
-		const queryResult = await CodeTablesService.listCodeTables(req.database);
+		let deep = false;
+
+		if (req.query.deep) {
+			deep = true;
+		}
+
+		const queryResult = await CodeTablesService.listCodeTables(req.database, deep);
+
 		return res.status(200).json(queryResult);
 	} catch (err) {
 		next(err);

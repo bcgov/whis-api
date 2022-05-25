@@ -7,10 +7,52 @@ export interface IGenerationRequest {
 const HealthIDsService = {
 	listIDsByYear: async db => {
 		const queryResult = await db.query({
-			text: 'SELECT y.short_name AS YEAR, id.id AS id, id."number" AS "number" FROM id AS id LEFT OUTER JOIN YEAR y ON id.year_id = y.id ORDER BY YEAR DESC, "number" ASC',
+			text: 'SELECT * from id_by_year',
 			values: []
 		});
 		return queryResult.rows;
+	},
+
+	getId: async (db, id) => {
+		const queryResult = await db.query({
+			text: `select iby.id,
+										iby.number,
+										iby.wlh_id,
+										gr.created_at,
+										u.email,
+										gr.species,
+										gr.reason,
+										gr.purpose,
+										gr.project,
+										r.name as region
+						 from id_by_year as iby
+										join year y on iby.year_id = y.id
+										join id i on iby.id = i.id
+										join generation_record gr on gr.id = i.generation_record_id
+										join "user" u on u.id = gr.user_id
+										join region r on r.id = gr.region_id
+						 where iby.id = $1`,
+			values: [id]
+		});
+
+		if (queryResult.rows.length !== 1) {
+			throw new Error('unknown id');
+		}
+
+		const result = {
+			...queryResult.rows[0]
+		};
+
+		const eventQueryResult = await db.query({
+			text: `select e.*
+						 from event as e
+						 where e.wildlife_health_id = $1`,
+			values: [id]
+		});
+
+		result.events = eventQueryResult.rows;
+
+		return result;
 	},
 
 	generateIDs: async (db, email: string, generationRequest: IGenerationRequest) => {

@@ -68,12 +68,15 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.get(`${prefix}/users/access_request`, securityMiddleware.protect(), User.GetAccessRequest)
 
 		.get(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.List)
+
 		.post(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.Generate)
 
 		.get(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.TestLock)
 		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
 		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
 		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
+
+		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 		.get(`${prefix}/codes/:name`, securityMiddleware.protect(), CodeTables.Get)
