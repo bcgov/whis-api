@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://github.com/bcgov/whis-api/schemas/generation-request.schema.json",
+	"title": "ID Generation Request",
+	"description": "Generation Request",
+	"type": "object",
+	"properties": {
+		"number": {
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 100
+		}
+	}
+}
