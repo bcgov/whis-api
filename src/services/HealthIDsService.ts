@@ -1,4 +1,5 @@
 import {log} from '../util/Log';
+import {dispatchEvent, WHISEvent} from './EventBus';
 
 export interface IGenerationRequest {
 	quantity: number;
@@ -99,6 +100,7 @@ const HealthIDsService = {
 		});
 
 		if (queryResult.rowCount === 0) {
+			dispatchEvent(WHISEvent.LOCK_BECOMES_AVAILABLE);
 			return {
 				canLock: true,
 				lockHolder: null
@@ -114,6 +116,7 @@ const HealthIDsService = {
 				}
 			};
 		}
+		dispatchEvent(WHISEvent.LOCK_BECOMES_UNAVAILABLE);
 		return {
 			canLock: false,
 			lockHolder: {
@@ -130,6 +133,7 @@ const HealthIDsService = {
 				text: 'INSERT INTO generation_lock(email) values ($1)',
 				values: [email]
 			});
+			dispatchEvent(WHISEvent.LOCK_BECOMES_UNAVAILABLE);
 			return true;
 		} catch (err) {
 			log.error('error acquiring generation lock');
@@ -166,6 +170,7 @@ const HealthIDsService = {
 								 and tstzrange(acquired, expires) @> current_timestamp;`,
 				values: [email]
 			});
+			dispatchEvent(WHISEvent.LOCK_BECOMES_AVAILABLE);
 			return true;
 		} catch (err) {
 			log.error('error acquiring generation lock');

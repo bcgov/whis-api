@@ -14,6 +14,7 @@ import User from './apis/User';
 import Years from './apis/Years';
 import {log} from './util/Log';
 import {IncomingMessage, ServerResponse} from 'http';
+import Events from './apis/Events';
 
 const prefix = '/api/v1';
 
@@ -75,6 +76,8 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
 		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
 		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
+
+		.get(`${prefix}/events`, securityMiddleware.protect(), Events.EventPoll)
 
 		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
 
