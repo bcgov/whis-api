@@ -10,7 +10,7 @@ const pool = new pg.Pool({
 	password: Config.DB_PASSWORD,
 	host: Config.DB_HOST,
 	port: Config.DB_PORT,
-	max: 10
+	max: 20
 });
 
 pool.on('connect', client => {
@@ -24,6 +24,7 @@ pool.on('error', (err: Error): void => {
 const app = buildApp(pool, {useTestSecurity: false});
 
 const server = http.createServer(app);
+server.setMaxListeners(25);
 
 server.listen(Config.LISTEN_PORT, () => {
 	log.info(`listening on port ${Config.LISTEN_PORT}`);
