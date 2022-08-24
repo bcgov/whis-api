@@ -10,7 +10,7 @@ const pool = new pg.Pool({
 	password: Config.DB_PASSWORD,
 	host: Config.DB_HOST,
 	port: Config.DB_PORT,
-	max: 20
+	max: 100
 });
 
 pool.on('connect', client => {

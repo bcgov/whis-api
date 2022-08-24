@@ -1,6 +1,7 @@
 import {EventEmitter, once} from 'events';
+import {log} from '../util/Log';
 
-const LONG_POLL_TIME = 60 * 10000; // one minute open time
+const LONG_POLL_TIME = 5 * 1000;
 
 const eventBus = new EventEmitter();
 

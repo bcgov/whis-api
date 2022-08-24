@@ -30,18 +30,28 @@ const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 
 			if (!authHeader) {
 				response.status(401).send();
+				return;
 			}
 
-			const token = authHeader.split(/\s/)[1];
-
+			let token;
+			try {
+				token = authHeader.split(/\s/)[1];
+			} catch (err) {
+				log.error('caught error while decoding token, sending 401');
+				log.error(err.toString());
+				response.status(401).send();
+				return;
+			}
 			if (!token) {
 				response.status(401).send();
+				return;
 			}
 
 			jwt.verify(token, retrieveKey, {}, function (error, decoded) {
 				if (error) {
 					log.error(error.toString());
 					response.status(401).send();
+					return;
 				}
 
 				const subject = decoded.sub;
