@@ -13,7 +13,6 @@ import HealthIDs from './apis/HealthIDs';
 import User from './apis/User';
 import Years from './apis/Years';
 import {log} from './util/Log';
-import {IncomingMessage, ServerResponse} from 'http';
 import Events from './apis/Events';
 
 const prefix = '/api/v1';
