@@ -1,10 +1,17 @@
 import jwksRsa from 'jwks-rsa';
 import {Response} from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, {JwtPayload} from 'jsonwebtoken';
 import {WHISRequest} from './App';
 import UserService from './services/UserService';
 import {Pool} from 'pg';
 import {log} from './util/Log';
+
+//values we can expect to exist in the token
+interface WHISJWTPayload extends JwtPayload {
+	email: string;
+	name: string;
+	preferred_username: string;
+}
 
 const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 	const jwks = jwksRsa({
@@ -54,14 +61,16 @@ const jwksMiddleware = (pool: Pool, options: {jwksUri: string}) => {
 					return;
 				}
 
-				const subject = decoded.sub;
+				const whisSpecificJWT = decoded as WHISJWTPayload;
 
-				UserService.getRolesForUser(pool, decoded.email).then(roles => {
+				const subject = whisSpecificJWT.sub;
+
+				UserService.getRolesForUser(pool, whisSpecificJWT.email).then(roles => {
 					req.whisContext = {
 						subject: subject,
-						name: decoded.name,
-						preferredUsername: decoded.preferred_username,
-						email: decoded.email,
+						name: whisSpecificJWT.name,
+						preferredUsername: whisSpecificJWT.preferred_username,
+						email: whisSpecificJWT.email,
 						roles
 					};
 					next();
