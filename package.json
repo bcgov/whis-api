@@ -57,6 +57,8 @@
 		"dev": "node --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
 		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
 		"migrate": "knex --esm migrate:latest",
+		"rollback": "knex --esm migrate:rollback",
+		"create_migration": "knex --esm migrate:make new_migration",
 		"prepare": "husky install"
 	},
 	"lint-staged": {

@@ -25,13 +25,15 @@ const HealthIDsService = {
 										gr.reason,
 										gr.purpose,
 										gr.project,
-										r.name as region
+										r.name as region,
+										detail.persisted_form_state
 						 from id_by_year as iby
-										join year y on iby.year_id = y.id
-										join id i on iby.id = i.id
-										join generation_record gr on gr.id = i.generation_record_id
-										join "user" u on u.id = gr.user_id
-										join region r on r.id = gr.region_id
+										inner join year y on iby.year_id = y.id
+										inner join id i on iby.id = i.id
+										inner join generation_record gr on gr.id = i.generation_record_id
+										inner join "user" u on u.id = gr.user_id
+										inner join region r on r.id = gr.region_id
+										left outer join id_detail detail on detail.wildlife_health_id = i.id
 						 where iby.id = $1`,
 			values: [id]
 		});
@@ -52,6 +54,27 @@ const HealthIDsService = {
 		});
 
 		result.events = eventQueryResult.rows;
+
+		return result;
+	},
+
+	persistData: async (db, id, data) => {
+		const queryResult = await db.query({
+			text: `insert into id_detail (wildlife_health_id, persisted_form_state)
+						 values ($1, $2) on conflict (wildlife_health_id)
+			do
+			update set persisted_form_state = $2
+			returning persisted_form_state`,
+			values: [id, data]
+		});
+
+		if (queryResult.rows.length !== 1) {
+			throw new Error('no update performed');
+		}
+
+		const result = {
+			...queryResult.rows[0]
+		};
 
 		return result;
 	},
@@ -149,7 +172,9 @@ const HealthIDsService = {
 							 set expires = current_timestamp + interval '3 minutes'
 							 where email = $1
 								 and not released
-								 and tstzrange(acquired, expires) @> current_timestamp;`,
+								 and tstzrange(acquired
+									 , expires) @
+									 > current_timestamp;`,
 				values: [email]
 			});
 			return true;
@@ -167,7 +192,7 @@ const HealthIDsService = {
 							 set released = true
 							 where email = $1
 								 and not released
-								 and tstzrange(acquired, expires) @> current_timestamp;`,
+								 and tstzrange(acquired, expires) @ > current_timestamp;`,
 				values: [email]
 			});
 			dispatchEvent(WHISEvent.LOCK_BECOMES_AVAILABLE);

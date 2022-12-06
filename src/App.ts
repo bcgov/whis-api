@@ -79,6 +79,7 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.get(`${prefix}/events`, securityMiddleware.protect(), Events.EventPoll)
 
 		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
+		.post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 		.get(`${prefix}/codes/:name`, securityMiddleware.protect(), CodeTables.Get)

@@ -62,6 +62,15 @@ const Detail: RequestHandler = async (req: WHISRequest, res: Response, next): Pr
 	}
 };
 
+const Persist: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	try {
+		const queryResult = await HealthIDsService.persistData(req.database, req.params['id'], req.body);
+		return res.status(200).json(queryResult);
+	} catch (err) {
+		next(err);
+	}
+};
+
 const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {
 		await HealthIDsService.generateIDs(req.database, req.whisContext.email, req.body);
@@ -75,6 +84,7 @@ const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): 
 export default {
 	List,
 	Detail,
+	Persist,
 	Generate,
 	TestLock,
 	AcquireLock,
