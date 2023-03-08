@@ -2,6 +2,7 @@ import {RequestHandler, Response} from 'express';
 import {WHISRequest} from '../App';
 import HealthIDsService from '../services/HealthIDsService';
 import {eventPoll, WHISEvent} from '../services/EventBus';
+import {SearchService} from '../services/Search';
 
 const TestLock: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	const pool = req.database.pool;
@@ -37,6 +38,17 @@ const ReleaseLock: RequestHandler = async (req: WHISRequest, res: Response, next
 			return res.status(200).json({status: true, message: 'lock released'});
 		}
 		return res.status(500).json({status: false, message: 'lock NOT released'});
+	} catch (err) {
+		next(err);
+	}
+};
+
+const Search: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	const searchService = new SearchService();
+
+	try {
+		const searchResult = await searchService.wildlifeIDSearch(req.body);
+		return res.status(200).json(searchResult);
 	} catch (err) {
 		next(err);
 	}
@@ -85,6 +97,7 @@ export default {
 	List,
 	Detail,
 	Persist,
+	Search,
 	Generate,
 	TestLock,
 	AcquireLock,

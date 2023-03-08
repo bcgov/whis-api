@@ -15,6 +15,9 @@ const Config = {
 	DB_HOST: process.env.DB_HOST,
 	DB_PORT: parseInt(process.env.DB_PORT),
 
+	ELASTICSEARCH_URL: process.env.ELASTICSEARCH_URL,
+	ELASTICSEARCH_INDEX: process.env.ELASTICSEARCH_INDEX_NAME,
+
 	JWKS_URL: process.env.JWKS_URL,
 
 	RABBIT_MQ_HOST: process.env.RABBIT_MQ_HOST,

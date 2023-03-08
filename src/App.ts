@@ -71,6 +71,8 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 
 		.post(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.Generate)
 
+		.post(`${prefix}/ids/search`, securityMiddleware.protect(), HealthIDs.Search)
+
 		.get(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.TestLock)
 		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
 		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)

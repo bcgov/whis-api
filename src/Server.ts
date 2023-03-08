@@ -3,8 +3,9 @@ import {Config} from './Config';
 import {buildApp} from './App';
 import pg from 'pg';
 import {log} from './util/Log';
+import {SearchService} from './services/Search';
 
-const pool = new pg.Pool({
+export const pool = new pg.Pool({
 	user: Config.DB_USER,
 	database: Config.DB_NAME,
 	password: Config.DB_PASSWORD,
@@ -13,8 +14,22 @@ const pool = new pg.Pool({
 	max: 100
 });
 
+let indexing = false;
+let tryIndex = true;
+
 pool.on('connect', client => {
 	client.query('SET search_path TO whis');
+
+	if (tryIndex) {
+		if (!indexing) {
+			indexing = true;
+			const search = new SearchService();
+			search.reindexAll().then(() => {
+				indexing = false;
+				tryIndex = false;
+			});
+		}
+	}
 });
 
 pool.on('error', (err: Error): void => {

@@ -1,5 +1,3 @@
-import {Pool} from 'pg';
-
 async function getRolesForUser(db, email: string): Promise<string[]> {
 	const queryResult = await db.query({
 		text: `select array_agg(r.name) as roles
@@ -35,7 +33,7 @@ async function getAccessRequest(db, email: string): Promise<any> {
 }
 
 async function createAccessRequest(db, email: string, reason?: string | null): Promise<void> {
-	const queryResult = await db.query({
+	await db.query({
 		text: `insert into access_request(email, reason)
 					 values ($1, $2) on conflict (email)
 					 do

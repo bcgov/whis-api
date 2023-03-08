@@ -11,6 +11,7 @@
 	"author": "BC Government",
 	"license": "ISC",
 	"dependencies": {
+		"@elastic/elasticsearch": "^8.6.0",
 		"@types/cors": "^2.8.12",
 		"@types/express": "^4.17.14",
 		"@types/minio": "^7.0.14",
