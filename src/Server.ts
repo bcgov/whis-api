@@ -15,7 +15,7 @@ export const pool = new pg.Pool({
 });
 
 let indexing = false;
-let tryIndex = false;
+let tryIndex = true;
 
 pool.on('connect', client => {
 	client.query('SET search_path TO whis');
