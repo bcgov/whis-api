@@ -14,6 +14,7 @@ import User from './apis/User';
 import Years from './apis/Years';
 import {log} from './util/Log';
 import Events from './apis/Events';
+import Autofill from './apis/Autofill';
 
 const prefix = '/api/v1';
 
@@ -71,6 +72,8 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 
 		.post(`${prefix}/ids`, securityMiddleware.protect(), HealthIDs.Generate)
 
+		.post(`${prefix}/ids/search`, securityMiddleware.protect(), HealthIDs.Search)
+
 		.get(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.TestLock)
 		.post(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.AcquireLock)
 		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
@@ -85,6 +88,8 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.get(`${prefix}/codes/:name`, securityMiddleware.protect(), CodeTables.Get)
 
 		.get(`${prefix}/years`, securityMiddleware.protect(), Years.List)
+
+		.get(`${prefix}/autofill/taxonomy/:q`, securityMiddleware.protect(), Autofill.TaxonomyAutofill)
 
 		.get('/health', HealthCheck)
 		.get('*', NotFound)
