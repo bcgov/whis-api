@@ -1,4 +1,6 @@
 import {Client} from '@elastic/elasticsearch';
+import esb from 'elastic-builder';
+import _ from 'lodash';
 
 import {log} from '../util/Log';
 import {Config} from '../Config';
@@ -18,25 +20,48 @@ interface HealthIDIndexedForm {
 	requesterLastName: string | null;
 	requesterOrganization: string | null;
 	species: string | null;
+	lastEventType: string | null;
+	lastEventDate: number | null;
 	homeRegion: string | null;
 }
 
-export interface HealthIDSearchParams {
-	id?: number;
-	year?: number;
-	wlhID?: string;
-	keywords?: string;
-	sequenceNumberMinimum?: number | null;
-	sequenceNumberMaximum?: number | null;
-	creationDateMinimum?: number | null; //millis since epoch
-	creationDateMaximum?: number | null; //millis since epoch
-	creator?: string;
-	currentStatus?: string;
+// this is the form that comes in from the client
+interface SearchRequest {
+	keywords?: string[];
+	minimumId?: string;
+	maximumId?: string;
+	namedDateRanges?: string[];
+	creation?: {
+		startDate?: string;
+		endDate?: string;
+	};
+	status?: string;
 	purpose?: string;
-	requester?: string;
-	requesterOrganization?: string;
+	requester?: {
+		name?: string;
+		organization?: string;
+	};
 	species?: string;
-	homeRegion?: string;
+	region?: string;
+	identifier?: {
+		type?: string;
+		details?: string;
+	};
+	events?: {
+		type?: string;
+		startDate?: string;
+		endDate?: string;
+		submitter?: {
+			name?: string;
+			organization?: string;
+		};
+		location?: {
+			type?: string;
+			details?: string;
+		};
+		ageClass?: string;
+		samples?: string;
+	};
 }
 
 export interface SearchResult {
@@ -55,14 +80,12 @@ export class SearchService {
 			purpose: healthId.purpose,
 			requesterFirstName: healthId.requester_first_name,
 			requesterLastName: healthId.requester_last_name,
+			lastEventType: null,
+			lastEventDate: null,
 			requesterOrganization: null,
 			species: healthId.species,
 			homeRegion: healthId.home_region
 		};
-
-		if (healthId.id == 2070) {
-			console.dir(healthId);
-		}
 
 		if (healthId.persisted_form_state !== null) {
 			if (healthId.persisted_form_state.metadata.apiVersion === '20230119') {
@@ -136,22 +159,65 @@ export class SearchService {
 		log.info('bulk reindex finished');
 	}
 
-	async wildlifeIDSearch(params: HealthIDSearchParams): Promise<SearchResult> {
+	async wildlifeIDSearch(params: SearchRequest): Promise<SearchResult> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
 		const indexName = `${Config.ELASTICSEARCH_INDEX}-primary`;
 
 		const result: SearchResponse<unknown, Record<string, AggregationsAggregate>> = await client.search({
-			index: indexName,
-			size: 100,
-			query: {
-				match: {
-					keywords: params.keywords
-				}
-			}
+			body: searchRequestToESQuery(params),
+			index: indexName
 		});
-
-		console.dir(result);
 
 		return this._sanitizedSearchResults(result);
 	}
+}
+
+function searchRequestToESQuery(params: SearchRequest) {
+	let queryBuilder = esb.requestBodySearch();
+
+	const scoringQueries = [];
+	if (_.has(params, 'keywords')) {
+		for (const keyword of params.keywords) {
+			scoringQueries.push(esb.fuzzyQuery('keywords', keyword));
+		}
+	}
+
+	const filteringQueries = [];
+
+	if (_.has(params, 'region') && params.region !== null && params.region.trim().length > 0) {
+		filteringQueries.push(esb.matchQuery('homeRegion', params.region));
+	}
+	if (_.has(params, 'purpose') && params.purpose !== null && params.purpose.trim().length > 0) {
+		filteringQueries.push(esb.matchQuery('purpose', params.purpose));
+	}
+
+	if (filteringQueries.length == 0 && scoringQueries.length == 0) {
+		// special case, just show the last 50
+		queryBuilder = queryBuilder.query(esb.matchAllQuery());
+		queryBuilder = queryBuilder.sort(esb.sort('creationDate', 'desc'));
+		queryBuilder = queryBuilder.size(50);
+		log.info(queryBuilder.toJSON());
+		return queryBuilder.toJSON();
+	}
+
+	const composedQuery = esb.boolQuery();
+
+	if (filteringQueries.length > 0) {
+		composedQuery.filter(filteringQueries);
+	}
+
+	if (scoringQueries.length > 0) {
+		composedQuery.should(scoringQueries);
+		composedQuery.minimumShouldMatch(1);
+	}
+
+	queryBuilder.query(composedQuery);
+
+	queryBuilder = queryBuilder.sorts([esb.sort('_score', 'desc'), esb.sort('creationDate', 'desc')]);
+
+	queryBuilder = queryBuilder.size(100);
+
+	log.info(queryBuilder.toJSON());
+
+	return queryBuilder.toJSON();
 }
