@@ -141,13 +141,12 @@ const HealthIDsService = {
 
 		const qty = generationRequest.quantity;
 
-		//@todo trust the year on the incoming generation request
 		const yearQuery = await db.query({
 			text: `select id as year_id, coalesce(last_sequence_value, 1) as seq
 						 from year
-						 where current_date >= starts
-							 and current_date < ends`,
-			values: []
+						 where $1 >= starts
+							 and $1 < ends`,
+			values: [new Date(generationRequest.year)]
 		});
 
 		const yearId = yearQuery.rows[0]['year_id'];
