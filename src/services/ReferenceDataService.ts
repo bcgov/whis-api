@@ -1,5 +1,5 @@
 const ReferenceDataService = {
-	getReferenceData: async (db, deep = false) => {
+	getReferenceData: async db => {
 		const referenceQueries = [
 			{
 				short_name: 'animal_sex',
@@ -70,6 +70,14 @@ const ReferenceDataService = {
 
                 from population_unit
                 order by sort_order asc, name`
+			},
+			{
+				short_name: 'organization',
+				display_name: 'Organization',
+				query: `SELECT id as code,
+       					name
+                from contact_list_organization
+                order by name asc`
 			}
 		];
 

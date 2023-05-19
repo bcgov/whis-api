@@ -2,28 +2,46 @@ import {log} from '../util/Log';
 
 export interface IGenerationRequest {
 	quantity: number;
-	year: string;
+	year: number;
 	purpose: string | null;
-	species: string | null;
+	species: number | null;
 	project: string | null;
-	homeRegion: string | null;
+	region: number | null;
 	initialStatus: string;
 	projectDetail: string | null;
-	requester: {
-		role: string | null;
-		organization: string | null;
-		region: string | null;
-		email: string | null;
-		phoneNumber: string | null;
-		firstName: string;
-		lastName: string;
-	};
+	requester: number | null;
 }
 
 const HealthIDsService = {
 	listIDsByYear: async db => {
 		const queryResult = await db.query({
-			text: 'SELECT * from id_by_year',
+			text: `SELECT w.id,
+                    w.id_number,
+                    (y.short_name || '-' || (select case
+                                                        when length(w.id_number::text) < 4
+                                                            then lpad(w.id_number::text, 4, '0')
+                                                        else w.id_number::text end)) as wlh_id,
+                    w.current_status,
+                    w.flagged,
+                    w.updated_after_creation,
+                    r.name                                                           as region,
+                    sex.name                                                         as sex,
+                    y.name                                                           as year,
+                    p.name                                                           as primary_purpose,
+                    srr.english_name                                                 as species,
+                    requester.first_name                                             as requester_first_name,
+                    requester.last_name                                              as requester_last_name,
+                    requester.organization_name                                      as requester_organization
+             from wildlife_health_id w
+                      left join region r on w.region_id = r.id
+                      left join purpose p on w.primary_purpose = p.code
+                      left join year y on y.id = w.year_id
+                      left join animal_sex sex on w.animal_sex_code = sex.code
+                      left join species_retrieval_record srr on w.species_retrieval_record_id = srr.id
+                      left join contact_list_person_retrieval_record requester
+                                on w.requester_retrieval_record_id = requester.id
+             order by y.ends desc, w.id_number asc
+			`,
 			values: []
 		});
 		return queryResult.rows;
@@ -112,28 +130,10 @@ const HealthIDsService = {
 		}
 
 		const generationRecordQueryResult = await db.query({
-			text: `INSERT INTO generation_record(user_id, species, purpose, project, initial_status, home_region,
-																					 project_detail, requester_first_name, requester_last_name,
-																					 requester_region, requester_organization,
-																					 requester_phone, requester_email, requester_role)
-						 values ((select id from "user" where email = $1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			text: `INSERT INTO generation_record(application_user_id)
+						 values ((select id from "application_user" where email = $1))
 						 returning id`,
-			values: [
-				email,
-				generationRequest.species,
-				generationRequest.purpose,
-				generationRequest.project,
-				generationRequest.initialStatus,
-				generationRequest.homeRegion,
-				generationRequest.projectDetail,
-				generationRequest.requester.firstName,
-				generationRequest.requester.lastName,
-				generationRequest.requester.region,
-				generationRequest.requester.organization,
-				generationRequest.requester.phoneNumber,
-				generationRequest.requester.email,
-				generationRequest.requester.role
-			]
+			values: [email]
 		});
 
 		const generationRecordID = generationRecordQueryResult.rows[0]['id'];
@@ -141,20 +141,48 @@ const HealthIDsService = {
 		const qty = generationRequest.quantity;
 
 		const yearQuery = await db.query({
-			text: `select id as year_id, coalesce(last_sequence_value, 1) as seq
+			text: `select id as year_id, high_water_mark as seq
 						 from year
-						 where $1 >= starts
-							 and $1 < ends`,
-			values: [new Date(generationRequest.year)]
+						 where id = $1`,
+			values: [generationRequest.year]
 		});
 
 		const yearId = yearQuery.rows[0]['year_id'];
 		const lastSequenceNumber = parseInt(yearQuery.rows[0]['seq']);
 
+		console.dir(generationRequest);
+
 		await db.query({
-			text: `INSERT INTO id(generation_record_id, year_id, number)
-						 select $1, $2, generate_series($3 + 1, $3 + $4)`,
-			values: [generationRecordID, yearId, lastSequenceNumber, qty]
+			text: `INSERT INTO wildlife_health_id(generation_record_id,
+																						year_id,
+																						id_number,
+																						current_status,
+																						region_id,
+																						requester_retrieval_record_id,
+																						primary_purpose,
+																						associated_project,
+																						associated_project_details)
+						 select $1,
+										$2,
+										generate_series($3 + 1, $3 + $4),
+										$5,
+										$6,
+										copy_contact_list_person_into_retrieval_record($7),
+										$8,
+										$9,
+										$10`,
+			values: [
+				generationRecordID,
+				yearId,
+				lastSequenceNumber,
+				qty,
+				generationRequest.initialStatus,
+				generationRequest.region,
+				generationRequest.requester,
+				generationRequest.purpose,
+				generationRequest.project,
+				generationRequest.projectDetail
+			]
 		});
 	},
 

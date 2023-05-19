@@ -14,6 +14,7 @@ import User from './apis/User';
 import Years from './apis/Years';
 import {log} from './util/Log';
 import Autofill from './apis/Autofill';
+import ContactList from './apis/ContactList';
 
 const prefix = '/api/v1';
 
@@ -82,6 +83,9 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
+
+		.get(`${prefix}/contacts`, securityMiddleware.protect(), ContactList.List)
+		.post(`${prefix}/contacts`, securityMiddleware.protect(), ContactList.Add)
 
 		.get(`${prefix}/years`, securityMiddleware.protect(), Years.List)
 
