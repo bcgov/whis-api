@@ -13,7 +13,6 @@ import HealthIDs from './apis/HealthIDs';
 import User from './apis/User';
 import Years from './apis/Years';
 import {log} from './util/Log';
-import Events from './apis/Events';
 import Autofill from './apis/Autofill';
 
 const prefix = '/api/v1';
@@ -79,13 +78,10 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.post(`${prefix}/ids/lock/renew`, securityMiddleware.protect(), HealthIDs.RenewLock)
 		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
 
-		.get(`${prefix}/events`, securityMiddleware.protect(), Events.EventPoll)
-
 		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
 		.post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
-		.get(`${prefix}/codes/:name`, securityMiddleware.protect(), CodeTables.Get)
 
 		.get(`${prefix}/years`, securityMiddleware.protect(), Years.List)
 

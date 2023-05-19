@@ -1,7 +1,6 @@
 import {RequestHandler, Response} from 'express';
 import {WHISRequest} from '../App';
 import HealthIDsService from '../services/HealthIDsService';
-import {eventPoll, WHISEvent} from '../services/EventBus';
 import {SearchService} from '../services/Search';
 
 const TestLock: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
