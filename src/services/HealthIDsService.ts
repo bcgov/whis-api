@@ -1,4 +1,5 @@
 import {log} from '../util/Log';
+import {TaxonomyService} from './TaxonomySearch';
 
 export interface IGenerationRequest {
 	quantity: number;
@@ -16,31 +17,28 @@ const HealthIDsService = {
 	listIDsByYear: async db => {
 		const queryResult = await db.query({
 			text: `SELECT w.id,
-                    w.id_number,
-                    (y.short_name || '-' || (select case
-                                                        when length(w.id_number::text) < 4
-                                                            then lpad(w.id_number::text, 4, '0')
-                                                        else w.id_number::text end)) as wlh_id,
-                    w.current_status,
-                    w.flagged,
-                    w.updated_after_creation,
-                    r.name                                                           as region,
-                    sex.name                                                         as sex,
-                    y.name                                                           as year,
-                    p.name                                                           as primary_purpose,
-                    srr.english_name                                                 as species,
-                    requester.first_name                                             as requester_first_name,
-                    requester.last_name                                              as requester_last_name,
-                    requester.organization_name                                      as requester_organization
-             from wildlife_health_id w
-                      left join region r on w.region_id = r.id
-                      left join purpose p on w.primary_purpose = p.code
-                      left join year y on y.id = w.year_id
-                      left join animal_sex sex on w.animal_sex_code = sex.code
-                      left join species_retrieval_record srr on w.species_retrieval_record_id = srr.id
-                      left join contact_list_person_retrieval_record requester
-                                on w.requester_retrieval_record_id = requester.id
-             order by y.ends desc, w.id_number asc
+										w.id_number,
+										w.computed_wildlife_id      as wlh_id,
+										w.current_status,
+										w.flagged,
+										w.updated_after_creation,
+										r.name                      as region,
+										sex.name                    as sex,
+										y.name                      as year,
+										p.name                      as primary_purpose,
+										srr.english_name            as species,
+										requester.first_name        as requester_first_name,
+										requester.last_name         as requester_last_name,
+										requester.organization_name as requester_organization
+						 from wildlife_health_id w
+										left join region r on w.region_id = r.id
+										left join purpose p on w.primary_purpose = p.code
+										left join year y on y.id = w.year_id
+										left join animal_sex sex on w.animal_sex_code = sex.code
+										left join species_retrieval_record srr on w.species_retrieval_record_id = srr.id
+										left join contact_list_person_retrieval_record requester
+															on w.requester_retrieval_record_id = requester.id
+						 order by y.ends desc, w.id_number
 			`,
 			values: []
 		});
@@ -128,6 +126,37 @@ const HealthIDsService = {
 			log.warn('we do not hold the lock!');
 			throw new Error('Cannot generate. Do not hold the lock');
 		}
+		let taxonomyData;
+		try {
+			taxonomyData = await new TaxonomyService().getTaxonomyFromIds([generationRequest.species]);
+		} catch (e) {
+			log.error(e);
+			throw new Error(`Unable to resolve species ${generationRequest.species}`);
+		}
+
+		if (taxonomyData.length !== 1) {
+			throw new Error('Unexpected result size of retrieved taxonomy data');
+		}
+
+		const speciesRetrievalQueryResult = await db.query({
+			text: `insert into species_retrieval_record(unit_name1, unit_name2, unit_name3, taxon_authority, code,
+																									tty_kingdom, tty_name, english_name, note)
+						 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+						 returning id`,
+			values: [
+				taxonomyData[0].unit_name1,
+				taxonomyData[0].unit_name2,
+				taxonomyData[0].unit_name3,
+				taxonomyData[0].taxon_authority,
+				taxonomyData[0].code,
+				taxonomyData[0].tty_kingdom,
+				taxonomyData[0].tty_name,
+				taxonomyData[0].english_name,
+				taxonomyData[0].note
+			]
+		});
+
+		const speciesRetrievalRecordID = speciesRetrievalQueryResult.rows[0]['id'];
 
 		const generationRecordQueryResult = await db.query({
 			text: `INSERT INTO generation_record(application_user_id)
@@ -150,27 +179,30 @@ const HealthIDsService = {
 		const yearId = yearQuery.rows[0]['year_id'];
 		const lastSequenceNumber = parseInt(yearQuery.rows[0]['seq']);
 
-		console.dir(generationRequest);
-
-		await db.query({
-			text: `INSERT INTO wildlife_health_id(generation_record_id,
-																						year_id,
-																						id_number,
-																						current_status,
-																						region_id,
-																						requester_retrieval_record_id,
-																						primary_purpose,
-																						associated_project,
-																						associated_project_details)
-						 select $1,
-										$2,
-										generate_series($3 + 1, $3 + $4),
-										$5,
-										$6,
-										copy_contact_list_person_into_retrieval_record($7),
-										$8,
-										$9,
-										$10`,
+		const result = await db.query({
+			text: `with created as (INSERT INTO wildlife_health_id (generation_record_id,
+                                                              year_id,
+                                                              id_number,
+                                                              current_status,
+                                                              region_id,
+                                                              requester_retrieval_record_id,
+                                                              primary_purpose,
+                                                              associated_project,
+                                                              associated_project_details,
+                                                              species_retrieval_record_id)
+          select $1,
+                 $2,
+                 generate_series($3 + 1, $3 + $4),
+                 $5,
+                 $6,
+                 copy_contact_list_person_into_retrieval_record($7),
+                 $8,
+                 $9,
+                 $10,
+                 $11
+          returning computed_wildlife_id, id)
+             select created.id, created.computed_wildlife_id as wlh_id
+             from created`,
 			values: [
 				generationRecordID,
 				yearId,
@@ -181,9 +213,12 @@ const HealthIDsService = {
 				generationRequest.requester,
 				generationRequest.purpose,
 				generationRequest.project,
-				generationRequest.projectDetail
+				generationRequest.projectDetail,
+				speciesRetrievalRecordID
 			]
 		});
+
+		return result.rows;
 	},
 
 	testLock: async (db, email: string) => {

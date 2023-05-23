@@ -90,7 +90,7 @@ export class TaxonomyService {
 
 	/**
 	 *
-	 * Searches the taxonomy Elasticsearch index by taxonomic code IDs and santizes the response
+	 * Searches the taxonomy Elasticsearch index by taxonomic code IDs and sanitizes the response
 	 * @param {string[] | number[]} ids The array of taxonomic code IDs
 	 * @returns {Promise<{ id: string, label: string}[]>} Promise resolving an ID and label pair for each taxonomic code
 	 * @memberof TaxonomyService
