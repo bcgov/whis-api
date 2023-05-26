@@ -84,7 +84,10 @@ const Persist: RequestHandler = async (req: WHISRequest, res: Response, next): P
 
 const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {
-		const result = await HealthIDsService.generateIDs(req.database, req.whisContext.email, req.body);
+		const result = await HealthIDsService.generateIDs(req.database, req.whisContext.email, {
+			...req.body,
+			region: !isNaN(parseInt(req.body.region)) ? parseInt(req.body.region) : null
+		});
 
 		return res.status(201).json({status: 'created', result});
 	} catch (err) {

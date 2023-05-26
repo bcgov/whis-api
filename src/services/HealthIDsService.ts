@@ -126,37 +126,41 @@ const HealthIDsService = {
 			log.warn('we do not hold the lock!');
 			throw new Error('Cannot generate. Do not hold the lock');
 		}
+
 		let taxonomyData;
-		try {
-			taxonomyData = await new TaxonomyService().getTaxonomyFromIds([generationRequest.species]);
-		} catch (e) {
-			log.error(e);
-			throw new Error(`Unable to resolve species ${generationRequest.species}`);
+		let speciesRetrievalRecordID = null;
+
+		if (generationRequest.species !== null) {
+			try {
+				taxonomyData = await new TaxonomyService().getTaxonomyFromIds([generationRequest.species]);
+			} catch (e) {
+				log.error(e);
+				throw new Error(`Unable to resolve species ${generationRequest.species}`);
+			}
+
+			if (taxonomyData.length !== 1) {
+				throw new Error('Unexpected result size of retrieved taxonomy data');
+			}
+
+			const speciesRetrievalQueryResult = await db.query({
+				text: `insert into species_retrieval_record(unit_name1, unit_name2, unit_name3, taxon_authority, code,
+																										tty_kingdom, tty_name, english_name, note)
+							 values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+				values: [
+					taxonomyData[0].unit_name1,
+					taxonomyData[0].unit_name2,
+					taxonomyData[0].unit_name3,
+					taxonomyData[0].taxon_authority,
+					taxonomyData[0].code,
+					taxonomyData[0].tty_kingdom,
+					taxonomyData[0].tty_name,
+					taxonomyData[0].english_name,
+					taxonomyData[0].note
+				]
+			});
+
+			speciesRetrievalRecordID = speciesRetrievalQueryResult.rows[0]['id'];
 		}
-
-		if (taxonomyData.length !== 1) {
-			throw new Error('Unexpected result size of retrieved taxonomy data');
-		}
-
-		const speciesRetrievalQueryResult = await db.query({
-			text: `insert into species_retrieval_record(unit_name1, unit_name2, unit_name3, taxon_authority, code,
-																									tty_kingdom, tty_name, english_name, note)
-						 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-						 returning id`,
-			values: [
-				taxonomyData[0].unit_name1,
-				taxonomyData[0].unit_name2,
-				taxonomyData[0].unit_name3,
-				taxonomyData[0].taxon_authority,
-				taxonomyData[0].code,
-				taxonomyData[0].tty_kingdom,
-				taxonomyData[0].tty_name,
-				taxonomyData[0].english_name,
-				taxonomyData[0].note
-			]
-		});
-
-		const speciesRetrievalRecordID = speciesRetrievalQueryResult.rows[0]['id'];
 
 		const generationRecordQueryResult = await db.query({
 			text: `INSERT INTO generation_record(application_user_id)
@@ -297,7 +301,7 @@ const HealthIDsService = {
 							 set released = true
 							 where email = $1
 								 and not released
-								 and tstzrange(acquired, expires) @ > current_timestamp;`,
+								 and tstzrange(acquired, expires) @> current_timestamp;`,
 				values: [email]
 			});
 			//dispatchEvent(WHISEvent.LOCK_BECOMES_AVAILABLE);
