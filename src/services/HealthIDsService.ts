@@ -47,32 +47,9 @@ const HealthIDsService = {
 
 	getId: async (db, id) => {
 		const queryResult = await db.query({
-			text: `select iby.id,
-										iby.number,
-										iby.wlh_id,
-										gr.created_at,
-										u.email,
-										gr.species,
-										gr.purpose,
-										gr.project,
-										gr.project_detail,
-										gr.requester_role,
-										gr.requester_email,
-										gr.requester_phone,
-										gr.requester_organization,
-										gr.requester_region,
-										gr.requester_first_name,
-										gr.requester_last_name,
-										gr.initial_status,
-										gr.home_region,
-										detail.persisted_form_state
-						 from id_by_year as iby
-										inner join year y on iby.year_id = y.id
-										inner join id i on iby.id = i.id
-										inner join generation_record gr on gr.id = i.generation_record_id
-										inner join "user" u on u.id = gr.user_id
-										left outer join id_detail detail on detail.wildlife_health_id = i.id
-						 where iby.id = $1`,
+			text: `select json
+             from whis_json_wildlife_health_id
+             where id = $1`,
 			values: [id]
 		});
 
@@ -81,17 +58,8 @@ const HealthIDsService = {
 		}
 
 		const result = {
-			...queryResult.rows[0]
+			...queryResult.rows[0]['json']
 		};
-
-		const eventQueryResult = await db.query({
-			text: `select e.*
-						 from event as e
-						 where e.wildlife_health_id = $1`,
-			values: [id]
-		});
-
-		result.events = eventQueryResult.rows;
 
 		return result;
 	},
