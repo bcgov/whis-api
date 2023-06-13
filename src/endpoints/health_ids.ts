@@ -1,7 +1,7 @@
 import {RequestHandler, Response} from 'express';
-import {WHISRequest} from '../App';
-import HealthIDsService from '../services/HealthIDsService';
-import {SearchService} from '../services/Search';
+import {WHISRequest} from '../app';
+import HealthIDsService from '../services/health_ids';
+import {SearchService} from '../services/search/search';
 
 const TestLock: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	const pool = req.database.pool;

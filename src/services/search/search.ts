@@ -2,10 +2,10 @@ import {Client} from '@elastic/elasticsearch';
 import esb from 'elastic-builder';
 import _ from 'lodash';
 
-import {log} from '../util/Log';
-import {Config} from '../Config';
-import HealthIDsService from './HealthIDsService';
-import {pool} from '../Server';
+import {log} from '../../util/log';
+import {Config} from '../../config';
+import HealthIDsService from '../health_ids';
+import {pool} from '../../server';
 import {AggregationsAggregate, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
 
 interface HealthIDIndexedForm {
@@ -103,60 +103,6 @@ export class SearchService {
 		return {
 			results: esResult.hits.hits.map(r => r._source)
 		};
-	}
-
-	async _createMapping(client: Client) {
-		//client.p
-	}
-
-	async reindexAll() {
-		const client = new Client({node: Config.ELASTICSEARCH_URL});
-		const indexName = `${Config.ELASTICSEARCH_INDEX}-primary`;
-
-		log.info('bulk reindex starting');
-
-		await client.indices.delete({
-			index: indexName,
-			ignore_unavailable: true
-		});
-
-		await client.indices.create({
-			index: indexName,
-			mappings: {
-				properties: {
-					wlhID: {
-						type: 'text',
-						copy_to: 'keywords'
-					},
-					species: {
-						type: 'text',
-						copy_to: 'keywords'
-					},
-					keywords: {
-						type: 'text'
-					}
-				}
-			}
-		});
-
-		const all = await HealthIDsService.listIDsByYear(pool);
-
-		for (const current of all) {
-			try {
-				const detail = await HealthIDsService.getId(pool, current.id);
-				const mapped = this._healthIDIndexedForm(detail);
-
-				log.debug(`'Mapping object: ${JSON.stringify(mapped)}`);
-				await client.index({
-					index: indexName,
-					document: mapped
-				});
-			} catch (e) {
-				log.error(`Error ${e} when processing ID ${JSON.stringify(current)}`);
-			}
-		}
-
-		log.info('bulk reindex finished');
 	}
 
 	async wildlifeIDSearch(params: SearchRequest): Promise<SearchResult> {

@@ -1,9 +1,9 @@
 import http from 'http';
-import {Config} from './Config';
-import {buildApp} from './App';
+import {Config} from './config';
+import {buildApp} from './app';
 import pg from 'pg';
-import {log} from './util/Log';
-import {SearchService} from './services/Search';
+import {log} from './util/log';
+import Indexer from './services/search/search_indexer';
 
 export const pool = new pg.Pool({
 	user: Config.DB_USER,
@@ -14,27 +14,16 @@ export const pool = new pg.Pool({
 	max: 100
 });
 
-let indexing = false;
-let tryIndex = false;
-
 pool.on('connect', client => {
 	client.query('SET search_path TO whis');
-
-	if (tryIndex) {
-		if (!indexing) {
-			indexing = true;
-			const search = new SearchService();
-			search.reindexAll().then(() => {
-				indexing = false;
-				tryIndex = false;
-			});
-		}
-	}
 });
 
 pool.on('error', (err: Error): void => {
 	log.error(`postgresql error: ${err}`);
 });
+
+const indexer = new Indexer();
+indexer.start();
 
 const app = buildApp(pool, {useTestSecurity: false});
 

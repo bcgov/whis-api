@@ -1,6 +1,6 @@
 import {RequestHandler, Response} from 'express';
-import {WHISRequest} from '../App';
-import ContactListService from '../services/ContactListService';
+import {WHISRequest} from '../app';
+import ContactListService from '../services/contact_list';
 
 const List: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {

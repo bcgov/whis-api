@@ -1,6 +1,6 @@
 import {Pool, QueryConfig, QueryResult} from 'pg';
 import {Request, Response} from 'express';
-import {log} from './util/Log';
+import {log} from './util/log';
 
 interface TransactionalRequest extends Request {
 	database: {

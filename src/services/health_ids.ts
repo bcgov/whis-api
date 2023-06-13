@@ -1,5 +1,5 @@
-import {log} from '../util/Log';
-import {TaxonomyService} from './TaxonomySearch';
+import {log} from '../util/log';
+import {TaxonomyService} from './taxonomy_search';
 
 export interface IGenerationRequest {
 	quantity: number;

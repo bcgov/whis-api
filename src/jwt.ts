@@ -1,10 +1,10 @@
 import jwksRsa from 'jwks-rsa';
 import {Response} from 'express';
 import jwt, {JwtPayload} from 'jsonwebtoken';
-import {WHISRequest} from './App';
-import UserService from './services/UserService';
+import {WHISRequest} from './app';
+import UserService from './services/user';
 import {Pool} from 'pg';
-import {log} from './util/Log';
+import {log} from './util/log';
 
 //values we can expect to exist in the token
 interface WHISJWTPayload extends JwtPayload {

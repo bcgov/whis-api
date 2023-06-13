@@ -1,4 +1,4 @@
-const ReferenceDataService = {
+const Reference_data = {
 	getReferenceData: async db => {
 		const referenceQueries = [
 			{
@@ -99,4 +99,4 @@ const ReferenceDataService = {
 	}
 };
 
-export default ReferenceDataService;
+export default Reference_data;

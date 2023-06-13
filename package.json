@@ -41,23 +41,17 @@
 		"winston": "^3.8.2"
 	},
 	"devDependencies": {
-		"@types/jest": "^29.2.1",
 		"eslint": "^8.26.0",
 		"husky": "^8.0.1",
-		"jest": "^29.2.2",
 		"lint-staged": "^13.0.3",
-		"prettier": "^2.7.1",
-		"supertest": "^6.3.1",
-		"ts-jest": "^29.0.3"
+		"prettier": "^2.7.1"
 	},
 	"scripts": {
 		"check-types": "tsc",
-		"test": "jest --runInBand --verbose --no-cache",
-		"clear_test_cache": "jest --clearCache",
 		"lint": "eslint '*/**/*.{js,ts,tsx}'",
 		"build": "tsc",
-		"dev": "node --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
-		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/Server.ts",
+		"dev": "node --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/server.ts",
+		"serve": "node  --experimental-specifier-resolution=node --experimental-modules --no-warnings --loader ts-node/esm src/server.ts",
 		"migrate": "knex --esm migrate:latest",
 		"rollback": "knex --esm migrate:rollback",
 		"create_migration": "knex --esm migrate:make new_migration",

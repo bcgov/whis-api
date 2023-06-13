@@ -1,7 +1,7 @@
 import {Client} from '@elastic/elasticsearch';
 import {AggregationsAggregate, QueryDslBoolQuery, SearchHit, SearchRequest, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
-import {log} from '../util/Log';
-import {Config} from '../Config';
+import {log} from '../util/log';
+import {Config} from '../config';
 
 export interface ITaxonomySource {
 	unit_name1: string;

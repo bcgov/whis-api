@@ -1,6 +1,6 @@
 import {RequestHandler, Response} from 'express';
-import {WHISRequest} from '../App';
-import UserService from '../services/UserService';
+import {WHISRequest} from '../app';
+import UserService from '../services/user';
 
 const Me: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
 	try {
