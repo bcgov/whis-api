@@ -64,27 +64,6 @@ const HealthIDsService = {
 		return result;
 	},
 
-	persistData: async (db, id, data) => {
-		const queryResult = await db.query({
-			text: `insert into id_detail (wildlife_health_id, persisted_form_state)
-						 values ($1, $2)
-						 on conflict (wildlife_health_id)
-							 do update set persisted_form_state = $2
-						 returning persisted_form_state`,
-			values: [id, data]
-		});
-
-		if (queryResult.rows.length !== 1) {
-			throw new Error('no update performed');
-		}
-
-		const result = {
-			...queryResult.rows[0]
-		};
-
-		return result;
-	},
-
 	generateIDs: async (db, email: string, generationRequest: IGenerationRequest) => {
 		const lockHeldQuery = await db.query({
 			text: 'SELECT COUNT(*) as held_lock from generation_lock_holder where email = $1',

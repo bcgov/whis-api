@@ -8,7 +8,6 @@ import {HealthCheck, NotFound} from './endpoints/common';
 import {Pool} from 'pg';
 import CodeTables from './endpoints/code_tables';
 import {Config} from './config';
-import {testSecurityMiddleware} from './test_helpers/TestSecurity';
 import HealthIDs from './endpoints/health_ids';
 import User from './endpoints/user';
 import Years from './endpoints/years';
@@ -41,14 +40,7 @@ export interface RuntimeConfig {
 export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig) {
 	const databaseMiddleware = DatabaseMiddleware(databaseConnection);
 
-	let securityMiddleware;
-	if (runtimeConfig.useTestSecurity) {
-		// use a fake security middleware for testing purposes
-		securityMiddleware = testSecurityMiddleware();
-	} else {
-		// use real JWT parser/verifier
-		securityMiddleware = jwksMiddleware(databaseConnection, {jwksUri: Config.JWKS_URL});
-	}
+	const securityMiddleware = jwksMiddleware(databaseConnection, {jwksUri: Config.JWKS_URL});
 
 	const app = express()
 		.use(helmet())
@@ -80,7 +72,7 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
 
 		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
-		.post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
+		// .post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 
@@ -90,6 +82,7 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.get(`${prefix}/years`, securityMiddleware.protect(), Years.List)
 
 		.get(`${prefix}/autofill/taxonomy/:q`, securityMiddleware.protect(), Autofill.TaxonomyAutofill)
+		.get(`${prefix}/autofill/contact/:q`, securityMiddleware.protect(), Autofill.ContactListAutofill)
 
 		.get('/health', HealthCheck)
 		.get('*', NotFound)

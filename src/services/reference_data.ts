@@ -78,6 +78,14 @@ const Reference_data = {
        					name
                 from contact_list_organization
                 order by name asc`
+			},
+			{
+				short_name: 'first_nation',
+				display_name: 'First Nation',
+				query: `SELECT id as code,
+       					name
+                from contact_list_first_nation
+                order by name asc`
 			}
 		];
 

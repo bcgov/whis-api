@@ -4,26 +4,9 @@ import _ from 'lodash';
 
 import {log} from '../../util/log';
 import {Config} from '../../config';
-import HealthIDsService from '../health_ids';
-import {pool} from '../../server';
-import {AggregationsAggregate, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
+import {AggregationsAggregate, QueryDslBoolQuery, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
+import {HEALTH_IDS_INDEX_NAME} from "./search_indexer";
 
-interface HealthIDIndexedForm {
-	id: number;
-	year: number;
-	wlhID: string;
-	creationDate: number; //millis since epoch
-	creator: string | null;
-	currentStatus: string | null;
-	purpose: string | null;
-	requesterFirstName: string | null;
-	requesterLastName: string | null;
-	requesterOrganization: string | null;
-	species: string | null;
-	lastEventType: string | null;
-	lastEventDate: number | null;
-	homeRegion: string | null;
-}
 
 // this is the form that comes in from the client
 interface SearchRequest {
@@ -69,35 +52,6 @@ export interface SearchResult {
 }
 
 export class SearchService {
-	_healthIDIndexedForm(healthId): HealthIDIndexedForm {
-		const built = {
-			id: healthId.id,
-			year: 0,
-			wlhID: healthId.wlh_id,
-			creationDate: healthId.created_at?.getTime() || null,
-			creator: null,
-			currentStatus: healthId.initial_status,
-			purpose: healthId.purpose,
-			requesterFirstName: healthId.requester_first_name,
-			requesterLastName: healthId.requester_last_name,
-			lastEventType: null,
-			lastEventDate: null,
-			requesterOrganization: null,
-			species: healthId.species,
-			homeRegion: healthId.home_region
-		};
-
-		if (healthId.persisted_form_state !== null) {
-			if (healthId.persisted_form_state.metadata.apiVersion === '20230119') {
-				console.log(`ID ${healthId.wlh_id} getting special treatment`);
-				console.log(JSON.stringify(healthId, null, 2));
-			} else {
-				log.info(`ID ${healthId.wlh_id} has rudimentary data only`);
-			}
-		}
-
-		return built;
-	}
 
 	_sanitizedSearchResults(esResult: SearchResponse<unknown, Record<string, AggregationsAggregate>>): SearchResult {
 		return {
@@ -107,15 +61,102 @@ export class SearchService {
 
 	async wildlifeIDSearch(params: SearchRequest): Promise<SearchResult> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
-		const indexName = `${Config.ELASTICSEARCH_INDEX}-primary`;
 
 		const result: SearchResponse<unknown, Record<string, AggregationsAggregate>> = await client.search({
 			body: searchRequestToESQuery(params),
-			index: indexName
+			index: HEALTH_IDS_INDEX_NAME
 		});
 
 		return this._sanitizedSearchResults(result);
 	}
+
+	async searchContactListPerson(term: string): Promise<{ id: string; label: string, document: unknown }[]> {
+		const client = new Client({node: Config.ELASTICSEARCH_URL});
+
+		const searchConfig: object[] = [];
+
+		console.log(`term: '${term}'`);
+
+		term.split(/(\s+)/).forEach((t: string) => {
+			if (t.length === 0 || t.match(/(\s+)/)) {
+				// skip empty tokens
+				return;
+			}
+			searchConfig.push(
+				{
+					bool: {
+						should: [
+							{
+								prefix: {
+									firstName: {
+										value: t,
+										boost: 1.5,
+										case_insensitive: true
+									}
+								}
+							},
+							{
+								prefix: {
+									lastName: {
+										value: t,
+										boost: 1.5,
+										case_insensitive: true
+									}
+								}
+							},
+							{
+								prefix: {
+									organizationalRole: {
+										value: t,
+										case_insensitive: true
+									}
+								}
+							},
+							{
+								match: {
+									comments: {
+										query: t,
+									}
+								}
+							},
+							{
+								wildcard: {
+									'organization.name': {
+										value: `*${t}*`,
+										boost: 3.0,
+										case_insensitive: true
+									}
+								}
+							}
+						]
+					}
+				}
+			);
+		});
+
+		console.dir(JSON.stringify(searchConfig, null, 2));
+
+		const response = await client.search({
+			query: {
+				bool: {
+					must: searchConfig
+				}
+			}
+		});
+
+		const mapResults = ({_id, _source}): { id, label, document } => {
+			return {
+				id: _id,
+				label: `${_source.firstName} ${_source.lastName}, ${_source.organizationalRole} at ${_source.organization?.name || 'Unknown'}`,
+				document: _source
+			}
+		}
+
+		// @ts-ignore
+		return response ? response.hits.hits.map(mapResults) : [];
+	}
+
+
 }
 
 function searchRequestToESQuery(params: SearchRequest) {
