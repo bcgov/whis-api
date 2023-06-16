@@ -91,8 +91,8 @@ const HealthIDsService = {
 
 			const speciesRetrievalQueryResult = await db.query({
 				text: `insert into species_retrieval_record(unit_name1, unit_name2, unit_name3, taxon_authority, code,
-																										tty_kingdom, tty_name, english_name, note)
-							 values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+																										tty_kingdom, tty_name, english_name, note, taxonomy_id)
+							 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
 				values: [
 					taxonomyData[0].unit_name1,
 					taxonomyData[0].unit_name2,
@@ -102,7 +102,8 @@ const HealthIDsService = {
 					taxonomyData[0].tty_kingdom,
 					taxonomyData[0].tty_name,
 					taxonomyData[0].english_name,
-					taxonomyData[0].note
+					taxonomyData[0].note,
+					generationRequest.species
 				]
 			});
 

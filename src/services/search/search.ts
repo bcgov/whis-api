@@ -5,8 +5,9 @@ import _ from 'lodash';
 import {log} from '../../util/log';
 import {Config} from '../../config';
 import {AggregationsAggregate, QueryDslBoolQuery, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
-import {HEALTH_IDS_INDEX_NAME} from "./search_indexer";
+import {HEALTH_IDS_INDEX_NAME} from './search_indexer';
 
+const RETURNED_FIELDS = ['id', 'creationDate', 'wildlifeHealthId', 'status', 'region', 'primaryPurpose', 'species', 'flagged'];
 
 // this is the form that comes in from the client
 interface SearchRequest {
@@ -24,8 +25,10 @@ interface SearchRequest {
 		name?: string;
 		organization?: string;
 	};
-	species?: string;
-	region?: string;
+	species?: {
+		id: string;
+	};
+	region?: number | string;
 	identifier?: {
 		type?: string;
 		details?: string;
@@ -52,25 +55,23 @@ export interface SearchResult {
 }
 
 export class SearchService {
-
-	_sanitizedSearchResults(esResult: SearchResponse<unknown, Record<string, AggregationsAggregate>>): SearchResult {
-		return {
-			results: esResult.hits.hits.map(r => r._source)
-		};
-	}
-
 	async wildlifeIDSearch(params: SearchRequest): Promise<SearchResult> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
 
 		const result: SearchResponse<unknown, Record<string, AggregationsAggregate>> = await client.search({
-			body: searchRequestToESQuery(params),
+			...searchRequestToESQuery(params),
+			_source: {
+				includes: RETURNED_FIELDS
+			},
 			index: HEALTH_IDS_INDEX_NAME
 		});
 
-		return this._sanitizedSearchResults(result);
+		return {
+			results: result.hits.hits.map(r => r._source)
+		};
 	}
 
-	async searchContactListPerson(term: string): Promise<{ id: string; label: string, document: unknown }[]> {
+	async searchContactListPerson(term: string): Promise<{id: string; label: string; document: unknown}[]> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
 
 		const searchConfig: object[] = [];
@@ -82,59 +83,55 @@ export class SearchService {
 				// skip empty tokens
 				return;
 			}
-			searchConfig.push(
-				{
-					bool: {
-						should: [
-							{
-								prefix: {
-									firstName: {
-										value: t,
-										boost: 1.5,
-										case_insensitive: true
-									}
-								}
-							},
-							{
-								prefix: {
-									lastName: {
-										value: t,
-										boost: 1.5,
-										case_insensitive: true
-									}
-								}
-							},
-							{
-								prefix: {
-									organizationalRole: {
-										value: t,
-										case_insensitive: true
-									}
-								}
-							},
-							{
-								match: {
-									comments: {
-										query: t,
-									}
-								}
-							},
-							{
-								wildcard: {
-									'organization.name': {
-										value: `*${t}*`,
-										boost: 3.0,
-										case_insensitive: true
-									}
+			searchConfig.push({
+				bool: {
+					should: [
+						{
+							prefix: {
+								firstName: {
+									value: t,
+									boost: 1.5,
+									case_insensitive: true
 								}
 							}
-						]
-					}
+						},
+						{
+							prefix: {
+								lastName: {
+									value: t,
+									boost: 1.5,
+									case_insensitive: true
+								}
+							}
+						},
+						{
+							prefix: {
+								organizationalRole: {
+									value: t,
+									case_insensitive: true
+								}
+							}
+						},
+						{
+							match: {
+								comments: {
+									query: t
+								}
+							}
+						},
+						{
+							wildcard: {
+								'organization.name': {
+									value: `*${t}*`,
+									boost: 3.0,
+									case_insensitive: true
+								}
+							}
+						}
+					]
 				}
-			);
+			});
 		});
-
-		console.dir(JSON.stringify(searchConfig, null, 2));
 
 		const response = await client.search({
 			query: {
@@ -144,19 +141,17 @@ export class SearchService {
 			}
 		});
 
-		const mapResults = ({_id, _source}): { id, label, document } => {
+		const mapResults = ({_id, _source}): {id; label; document} => {
 			return {
 				id: _id,
 				label: `${_source.firstName} ${_source.lastName}, ${_source.organizationalRole} at ${_source.organization?.name || 'Unknown'}`,
 				document: _source
-			}
-		}
+			};
+		};
 
 		// @ts-ignore
 		return response ? response.hits.hits.map(mapResults) : [];
 	}
-
-
 }
 
 function searchRequestToESQuery(params: SearchRequest) {
@@ -171,11 +166,17 @@ function searchRequestToESQuery(params: SearchRequest) {
 
 	const filteringQueries = [];
 
-	if (_.has(params, 'region') && params.region !== null && params.region.trim().length > 0) {
-		filteringQueries.push(esb.matchQuery('homeRegion', params.region));
+	if (_.has(params, 'region') && params.region !== null && String(params.region).trim().length > 0) {
+		filteringQueries.push(esb.matchQuery('region.id', String(params.region)));
 	}
 	if (_.has(params, 'purpose') && params.purpose !== null && params.purpose.trim().length > 0) {
-		filteringQueries.push(esb.matchQuery('purpose', params.purpose));
+		filteringQueries.push(esb.matchQuery('primaryPurpose.code', params.purpose));
+	}
+	if (_.has(params, 'status') && params.status !== null && params.status.trim().length > 0) {
+		filteringQueries.push(esb.matchQuery('status', params.status));
+	}
+	if (_.has(params, 'species') && params.species !== null && params.species?.id) {
+		filteringQueries.push(esb.termQuery('species.taxonomyId', parseInt(params.species.id)));
 	}
 
 	if (filteringQueries.length == 0 && scoringQueries.length == 0) {
