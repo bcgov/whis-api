@@ -108,6 +108,85 @@ class Indexer {
 					creationDate: {
 						type: 'date'
 					},
+					flagged: {
+						type: 'boolean'
+					},
+					status: {
+						type: 'keyword'
+					},
+					wildlifeHealthId: {
+						type: 'keyword',
+						copy_to: 'fulltext'
+					},
+					associatedProject: {
+						type: 'text',
+						copy_to: 'fulltext'
+					},
+					associatedProjectDetails: {
+						type: 'text',
+						copy_to: 'fulltext'
+					},
+					primaryPurpose: {
+						type: 'object',
+						properties: {
+							code: {
+								type: 'keyword'
+							}
+						}
+					},
+					secondaryPurpose: {
+						type: 'object',
+						properties: {
+							code: {
+								type: 'keyword'
+							}
+						}
+					},
+					idNumber: {
+						type: 'long'
+					},
+					region: {
+						type: 'object',
+						properties: {
+							id: {
+								type: 'long'
+							},
+							name: {
+								type: 'keyword',
+								copy_to: 'fulltext'
+							}
+						}
+					},
+					requester: {
+						type: 'object',
+						properties: {
+							firstName: {
+								type: 'keyword',
+								copy_to: 'fulltext'
+							},
+							lastName: {
+								type: 'keyword',
+								copy_to: 'fulltext'
+							},
+							organization: {
+								type: 'text',
+								copy_to: 'fulltext'
+							},
+							organizationalRole: {
+								type: 'keyword',
+								copy_to: 'fulltext'
+							},
+						}
+					},
+					year: {
+						type: 'object',
+						properties: {
+							name: {
+								type: 'keyword',
+								copy_to: 'fulltext'
+							}
+						}
+					},
 					species: {
 						type: 'object',
 						properties: {

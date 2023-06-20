@@ -11,43 +11,29 @@ const RETURNED_FIELDS = ['id', 'creationDate', 'wildlifeHealthId', 'status', 're
 
 // this is the form that comes in from the client
 interface SearchRequest {
-	keywords?: string[];
-	minimumId?: string;
-	maximumId?: string;
-	namedDateRanges?: string[];
-	creation?: {
-		startDate?: string;
-		endDate?: string;
-	};
-	status?: string;
-	purpose?: string;
-	requester?: {
-		name?: string;
-		organization?: string;
-	};
-	species?: {
-		id: string;
-	};
-	region?: number | string;
-	identifier?: {
-		type?: string;
-		details?: string;
-	};
-	events?: {
-		type?: string;
-		startDate?: string;
-		endDate?: string;
-		submitter?: {
-			name?: string;
-			organization?: string;
-		};
-		location?: {
-			type?: string;
-			details?: string;
-		};
-		ageClass?: string;
-		samples?: string;
-	};
+	keywords: string[];
+	minimumId: number | null;
+	maximumId: number | null;
+	namedDateRanges: string[],
+	creationStartDate: string,
+	creationEndDate: string,
+	status: string;
+	purpose: string;
+	requesterName: string,
+	requesterOrganization: number | null;
+	speciesId: number | null;
+	region: number | null;
+	identifierType: string;
+	identifierDetails: string;
+	eventType: string;
+	eventStartDate: string;
+	eventEndDate: string;
+	eventSubmitterName: string;
+	eventSubmitterOrganization: number | null;
+	eventLocationType: string;
+	eventLocationDetails: string;
+	eventAgeClass: string;
+	eventSamples: string;
 }
 
 export interface SearchResult {
@@ -71,12 +57,10 @@ export class SearchService {
 		};
 	}
 
-	async searchContactListPerson(term: string): Promise<{id: string; label: string; document: unknown}[]> {
+	async searchContactListPerson(term: string): Promise<{ id: string; label: string; document: unknown }[]> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
 
 		const searchConfig: object[] = [];
-
-		console.log(`term: '${term}'`);
 
 		term.split(/(\s+)/).forEach((t: string) => {
 			if (t.length === 0 || t.match(/(\s+)/)) {
@@ -141,7 +125,7 @@ export class SearchService {
 			}
 		});
 
-		const mapResults = ({_id, _source}): {id; label; document} => {
+		const mapResults = ({_id, _source}): { id; label; document } => {
 			return {
 				id: _id,
 				label: `${_source.firstName} ${_source.lastName}, ${_source.organizationalRole} at ${_source.organization?.name || 'Unknown'}`,
@@ -160,23 +144,101 @@ function searchRequestToESQuery(params: SearchRequest) {
 	const scoringQueries = [];
 	if (_.has(params, 'keywords')) {
 		for (const keyword of params.keywords) {
-			scoringQueries.push(esb.fuzzyQuery('keywords', keyword));
+
+			scoringQueries.push(esb.termQuery('wildlifeHealthId', keyword).boost(5));
+			scoringQueries.push(esb.termQuery('year.name', keyword).boost(2));
+
+			scoringQueries.push(esb.matchQuery('requester.firstName', keyword).fuzziness(1));
+			scoringQueries.push(esb.matchQuery('requester.lastName', keyword).fuzziness(1));
+
+			scoringQueries.push(esb.matchQuery('fulltext', keyword).fuzziness(0));
 		}
 	}
 
 	const filteringQueries = [];
 
 	if (_.has(params, 'region') && params.region !== null && String(params.region).trim().length > 0) {
-		filteringQueries.push(esb.matchQuery('region.id', String(params.region)));
+		filteringQueries.push(esb.termQuery('region.id', String(params.region)));
 	}
 	if (_.has(params, 'purpose') && params.purpose !== null && params.purpose.trim().length > 0) {
-		filteringQueries.push(esb.matchQuery('primaryPurpose.code', params.purpose));
+		filteringQueries.push(esb.termQuery('primaryPurpose.code', params.purpose));
 	}
 	if (_.has(params, 'status') && params.status !== null && params.status.trim().length > 0) {
-		filteringQueries.push(esb.matchQuery('status', params.status));
+		filteringQueries.push(esb.termsQuery('status', params.status));
 	}
-	if (_.has(params, 'species') && params.species !== null && params.species?.id) {
-		filteringQueries.push(esb.termQuery('species.taxonomyId', parseInt(params.species.id)));
+	if (_.has(params, 'speciesId') && params.speciesId !== null) {
+		filteringQueries.push(esb.termQuery('species.taxonomyId', params.speciesId));
+	}
+	if (_.has(params, 'minimumId') && params.minimumId !== null) {
+		filteringQueries.push(esb.rangeQuery('idNumber').gte(params.minimumId));
+	}
+	if (_.has(params, 'maximumId') && params.maximumId !== null) {
+		filteringQueries.push(esb.rangeQuery('idNumber').lte(params.maximumId));
+	}
+
+	if (_.has(params, 'requesterName') && params.requesterName !== null && params.requesterName.trim().length > 0) {
+		filteringQueries.push(esb.boolQuery().should(
+			[
+				esb.matchQuery('requester.firstName', params.requesterName).fuzziness(1),
+				esb.matchQuery('requester.lastName', params.requesterName).fuzziness(1)
+			]
+		).minimumShouldMatch(1));
+	}
+
+	if (_.has(params, 'requesterOrganization') && params.requesterOrganization !== null) {
+		filteringQueries.push(esb.termQuery('requester.contactListEntry.organization.id', params.requesterOrganization));
+	}
+
+	const creationDateFilterQueries = [];
+
+	if (_.has(params, 'namedDateRanges') && params.namedDateRanges !== null && params.namedDateRanges.includes('TODAY')) {
+		creationDateFilterQueries.push(
+			esb.rangeQuery('creationDate').gte("now-1d/d").lte("now/d")
+		)
+	}
+
+	if (_.has(params, 'namedDateRanges') && params.namedDateRanges !== null && params.namedDateRanges.includes('THIS_WEEK')) {
+		creationDateFilterQueries.push(
+			esb.rangeQuery('creationDate').gte("now-1w/d").lte("now/d")
+		)
+	}
+
+	if (_.has(params, 'namedDateRanges') && params.namedDateRanges !== null && params.namedDateRanges.includes('LAST_WEEK')) {
+		creationDateFilterQueries.push(
+			esb.rangeQuery('creationDate').gte("now-2w/d").lte("now-1w/d")
+		)
+	}
+
+	if (_.has(params, 'namedDateRanges') && params.namedDateRanges !== null && params.namedDateRanges.includes('LAST_MONTH')) {
+		creationDateFilterQueries.push(
+			esb.rangeQuery('creationDate').gte("now-1M/d").lte("now/d")
+		)
+	}
+
+	let manualCreationStartDate = null;
+	let manualCreationEndDate = null;
+
+	if (_.has(params, 'creationStartDate') && params.creationStartDate !== null && params.creationStartDate.trim().length > 0) {
+		manualCreationStartDate = params.creationStartDate;
+	}
+	if (_.has(params, 'creationEndDate') && params.creationEndDate !== null && params.creationEndDate.trim().length > 0) {
+		manualCreationEndDate = params.creationEndDate;
+	}
+	if (manualCreationStartDate !== null || manualCreationEndDate !== null) {
+		let manualCreationDateFilterQuery = esb.rangeQuery('creationDate');
+
+		if (manualCreationStartDate !== null) {
+			manualCreationDateFilterQuery = manualCreationDateFilterQuery.gte(manualCreationStartDate);
+		}
+		if (manualCreationEndDate !== null) {
+			manualCreationDateFilterQuery = manualCreationDateFilterQuery.lte(manualCreationEndDate);
+		}
+
+		creationDateFilterQueries.push(manualCreationDateFilterQuery);
+	}
+
+	if (creationDateFilterQueries.length > 0) {
+		filteringQueries.push(esb.boolQuery().should(creationDateFilterQueries).minimumShouldMatch(1));
 	}
 
 	if (filteringQueries.length == 0 && scoringQueries.length == 0) {
