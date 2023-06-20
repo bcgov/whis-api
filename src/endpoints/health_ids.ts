@@ -77,7 +77,8 @@ const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): 
 	try {
 		const result = await HealthIDsService.generateIDs(req.database, req.whisContext.email, {
 			...req.body,
-			region: !isNaN(parseInt(req.body.region)) ? parseInt(req.body.region) : null
+			region: !isNaN(parseInt(req.body.region)) ? parseInt(req.body.region) : null,
+			requester: !isNaN(parseInt(req.body.requester)) ? parseInt(req.body.requester) : null
 		});
 
 		return res.status(201).json({status: 'created', result});

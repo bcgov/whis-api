@@ -229,9 +229,7 @@ const HealthIDsService = {
 							 set expires = current_timestamp + interval '3 minutes'
 							 where email = $1
 								 and not released
-								 and tstzrange(acquired
-											 , expires) @
-								 > current_timestamp;`,
+								 and tstzrange(acquired, expires) @> current_timestamp;`,
 				values: [email]
 			});
 			return true;

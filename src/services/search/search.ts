@@ -1,11 +1,11 @@
 import {Client} from '@elastic/elasticsearch';
-import esb from 'elastic-builder';
+import esb, {requestBodySearch} from 'elastic-builder';
 import _ from 'lodash';
 
 import {log} from '../../util/log';
 import {Config} from '../../config';
 import {AggregationsAggregate, QueryDslBoolQuery, SearchResponse} from '@elastic/elasticsearch/lib/api/types';
-import {HEALTH_IDS_INDEX_NAME} from './search_indexer';
+import {CONTACTS_INDEX_NAME, HEALTH_IDS_INDEX_NAME} from './search_indexer';
 
 const RETURNED_FIELDS = ['id', 'creationDate', 'wildlifeHealthId', 'status', 'region', 'primaryPurpose', 'species', 'flagged'];
 
@@ -60,70 +60,26 @@ export class SearchService {
 	async searchContactListPerson(term: string): Promise<{ id: string; label: string; document: unknown }[]> {
 		const client = new Client({node: Config.ELASTICSEARCH_URL});
 
-		const searchConfig: object[] = [];
+		const composedQueries = [];
 
 		term.split(/(\s+)/).forEach((t: string) => {
 			if (t.length === 0 || t.match(/(\s+)/)) {
 				// skip empty tokens
 				return;
 			}
-			searchConfig.push({
-				bool: {
-					should: [
-						{
-							prefix: {
-								firstName: {
-									value: t,
-									boost: 1.5,
-									case_insensitive: true
-								}
-							}
-						},
-						{
-							prefix: {
-								lastName: {
-									value: t,
-									boost: 1.5,
-									case_insensitive: true
-								}
-							}
-						},
-						{
-							prefix: {
-								organizationalRole: {
-									value: t,
-									case_insensitive: true
-								}
-							}
-						},
-						{
-							match: {
-								comments: {
-									query: t
-								}
-							}
-						},
-						{
-							wildcard: {
-								'organization.name': {
-									value: `*${t}*`,
-									boost: 3.0,
-									case_insensitive: true
-								}
-							}
-						}
-					]
-				}
-			});
+			const scoringQueries = [];
+			scoringQueries.push(esb.prefixQuery('firstName', t).boost(1.5));
+			scoringQueries.push(esb.prefixQuery('lastName', t).boost(1.5));
+			scoringQueries.push(esb.termQuery('organizationalRole', t));
+			scoringQueries.push(esb.matchQuery('comments', t).fuzziness(1));
+			scoringQueries.push(esb.wildcardQuery('organization.name', `*${t}*`));
+			composedQueries.push(esb.boolQuery().should(scoringQueries).minimumShouldMatch(1));
 		});
 
-		const response = await client.search({
-			query: {
-				bool: {
-					must: searchConfig
-				}
-			}
-		});
+		const bodySearch = requestBodySearch();
+		bodySearch.query(esb.boolQuery().should(composedQueries));
+		bodySearch.size(10);
+		bodySearch.sort(esb.sort('_score', 'desc'))
 
 		const mapResults = ({_id, _source}): { id; label; document } => {
 			return {
@@ -132,6 +88,12 @@ export class SearchService {
 				document: _source
 			};
 		};
+
+		const response = await client.search({
+			...bodySearch.toJSON(),
+			index: CONTACTS_INDEX_NAME
+		});
+
 
 		// @ts-ignore
 		return response ? response.hits.hits.map(mapResults) : [];

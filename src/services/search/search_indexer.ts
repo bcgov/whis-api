@@ -101,6 +101,16 @@ class Indexer {
 			ignore_unavailable: true
 		});
 
+		await client.indices.delete({
+			index: CONTACTS_INDEX_NAME,
+			ignore_unavailable: true
+		});
+
+		await client.indices.delete({
+			index: ORGANIZATION_INDEX_NAME,
+			ignore_unavailable: true
+		});
+
 		await client.indices.create({
 			index: HEALTH_IDS_INDEX_NAME,
 			mappings: {
