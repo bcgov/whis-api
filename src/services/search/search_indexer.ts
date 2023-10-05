@@ -185,7 +185,16 @@ class Indexer {
 							organizationalRole: {
 								type: 'keyword',
 								copy_to: 'fulltext'
-							},
+							}
+						}
+					},
+					events: {
+						type: 'nested',
+						properties: {
+							history: {
+								type: 'text',
+								copy_to: 'fulltext'
+							}
 						}
 					},
 					year: {
