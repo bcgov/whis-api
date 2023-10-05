@@ -87,11 +87,62 @@ const Generate: RequestHandler = async (req: WHISRequest, res: Response, next): 
 	}
 };
 
+const PatchDetails: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	try {
+		const result = await HealthIDsService.patchId(req.database, req.params['id'], {
+			mode: 'DETAIL',
+			data: {
+				...req.body
+			},
+			updater: req.whisContext.email
+		});
+
+		return res.status(200).json(result);
+	} catch (err) {
+		next(err);
+	}
+};
+
+const PatchEvents: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	try {
+		const result = await HealthIDsService.patchId(req.database, req.params['id'], {
+			mode: 'EVENTS',
+			data: {
+				...req.body
+			},
+			updater: req.whisContext.email
+		});
+
+		return res.status(200).json(result);
+	} catch (err) {
+		next(err);
+	}
+};
+
+const PatchPurpose: RequestHandler = async (req: WHISRequest, res: Response, next): Promise<Response> => {
+	try {
+		const result = await HealthIDsService.patchId(req.database, req.params['id'], {
+			mode: 'PURPOSE',
+			data: {
+				...req.body
+			},
+			updater: req.whisContext.email
+		});
+
+		return res.status(200).json(result);
+	} catch (err) {
+		next(err);
+	}
+};
+
 export default {
 	List,
 	Detail,
 	Search,
 	Generate,
+	PatchDetails,
+	PatchEvents,
+	PatchPurpose,
 	TestLock,
 	AcquireLock,
 	RenewLock,

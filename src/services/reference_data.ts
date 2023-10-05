@@ -9,6 +9,13 @@ const Reference_data = {
                 order by sort_order asc, name`
 			},
 			{
+				short_name: 'animal_age_class',
+				display_name: 'Animal Age Class',
+				query: `SELECT code, name
+								from animal_age_class
+								order by sort_order asc, name`
+			},
+			{
 				short_name: 'animal_ear',
 				display_name: 'Animal Ear',
 				query: `SELECT code, name
@@ -67,8 +74,7 @@ const Reference_data = {
 				query: `SELECT id                                                                            as code,
                        name,
                        ((effective <= CURRENT_DATE) AND (expires IS NULL OR expires > CURRENT_DATE)) as currently_valid
-
-                from population_unit
+                from management_unit
                 order by sort_order asc, name`
 			},
 			{

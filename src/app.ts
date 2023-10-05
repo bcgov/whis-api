@@ -72,7 +72,9 @@ export function buildApp(databaseConnection: Pool, runtimeConfig: RuntimeConfig)
 		.delete(`${prefix}/ids/lock`, securityMiddleware.protect(), HealthIDs.ReleaseLock)
 
 		.get(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Detail)
-		// .post(`${prefix}/ids/:id`, securityMiddleware.protect(), HealthIDs.Persist)
+		.patch(`${prefix}/ids/:id/details`, securityMiddleware.protect(), HealthIDs.PatchDetails)
+		.patch(`${prefix}/ids/:id/events`, securityMiddleware.protect(), HealthIDs.PatchEvents)
+		.patch(`${prefix}/ids/:id/purpose`, securityMiddleware.protect(), HealthIDs.PatchPurpose)
 
 		.get(`${prefix}/codes`, securityMiddleware.protect(), CodeTables.List)
 
